@@ -1,0 +1,41 @@
+# ---- 环境与密钥 ----
+.env
+.env.local
+.env.*.local
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node ----
+node_modules/
+.next/
+out/
+.npm/
+*.tsbuildinfo
+
+# ---- 运行数据 ----
+data/
+uploads/
+*.sqlite3
+logs/
+
+# ---- 内部资料（需求文档、验收报告、界面截图）：不随仓库公开 ----
+RAG.txt
+docs/
+
+# ---- 截图脚本产生的浏览器临时 profile ----
+.chrome-profile/
+docs/screenshots/.chrome-profile/
+
+# ---- 编辑器 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,91 @@
+name: kb-platform
+
+# 基础镜像源。docker.io 在部分网络环境下无法直达，默认走国内可达镜像。
+# 如你的网络可直连 Docker Hub：docker compose build --build-arg PY_REGISTRY=docker.io --build-arg NODE_REGISTRY=docker.io
+x-build-args: &build-args
+  PY_REGISTRY: ${PY_REGISTRY:-docker.m.daocloud.io}
+  NODE_REGISTRY: ${NODE_REGISTRY:-docker.m.daocloud.io}
+  NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: kb-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kb_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-kb}
+      TZ: Asia/Shanghai
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kb} -d ${POSTGRES_DB:-kb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [kb]
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args: *build-args
+    container_name: kb-api
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kb}:${POSTGRES_PASSWORD:-kb_pass}@db:5432/${POSTGRES_DB:-kb}
+      DATA_DIR: /data
+    volumes:
+      - ./backend:/app
+      - upload_data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3).status==200 else 1)\""]
+      interval: 10s
+      timeout: 6s
+      retries: 12
+      start_period: 40s
+    networks: [kb]
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        <<: *build-args
+        # 构建期只注入「浏览器可见」的 API 前缀，运行期由 Nginx 反代 /api
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-/api}
+    container_name: kb-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Shanghai
+    depends_on:
+      - api
+    networks: [kb]
+
+  nginx:
+    image: nginx:alpine
+    container_name: kb-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web
+    networks: [kb]
+
+volumes:
+  db_data:
+  upload_data:
+
+networks:
+  kb:
+    driver: bridge
