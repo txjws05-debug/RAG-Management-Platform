@@ -100,33 +100,33 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
       {noticeNode}
 
       {/* 缓存状态卡片 */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">缓存状态</p>
-          <p className="mt-1 flex items-center gap-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-line bg-canvas px-4 py-3">
+          <p className="text-xs text-muted">缓存状态</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2">
             <Badge tone={cache?.enabled ? 'emerald' : 'slate'}>
               {cache?.enabled ? '已启用' : '未启用'}
             </Badge>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-faint">
               TTL 由服务端配置 · 版本 v{cache?.version ?? 0}
             </span>
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">缓存条数</p>
-          <p className="mt-1 text-xl font-semibold text-indigo-600">
+        <div className="rounded-xl border border-line bg-canvas px-4 py-3">
+          <p className="text-xs text-muted">缓存条数</p>
+          <p className="mt-1 text-xl font-semibold text-brand-ink">
             {formatNumber(cache?.cached_entries ?? 0)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">命中阈值</p>
-          <p className="mt-1 text-xl font-semibold text-slate-800">
+        <div className="rounded-xl border border-line bg-canvas px-4 py-3">
+          <p className="text-xs text-muted">命中阈值</p>
+          <p className="mt-1 text-xl font-semibold text-strong">
             {cache?.match_threshold !== undefined ? cache.match_threshold.toFixed(2) : '—'}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <p className="text-xs text-slate-500">最近加载时间</p>
-          <p className="mt-1 text-sm text-slate-700">{formatDateTime(cache?.loaded_at)}</p>
+        <div className="rounded-xl border border-line bg-canvas px-4 py-3">
+          <p className="text-xs text-muted">最近加载时间</p>
+          <p className="mt-1 text-sm text-body">{formatDateTime(cache?.loaded_at)}</p>
           {canManage ? (
             <Button size="sm" className="mt-2" onClick={refreshCache}>
               刷新缓存
@@ -141,6 +141,7 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
         bodyClassName="space-y-3"
         actions={
           <>
+            {/* 窄屏搜索框独占一行，宽屏才收到 w-56，否则会把 Card 头部挤换行 */}
             <Input
               value={keyword}
               onChange={(e) => {
@@ -148,7 +149,7 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
                 setPage(1)
               }}
               placeholder="检索问题或答案"
-              className="h-8 w-56 text-xs"
+              className="h-10 w-full text-xs sm:h-8 sm:w-56"
             />
             <Button size="sm" onClick={() => void mutate()}>
               刷新
@@ -157,7 +158,7 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
         }
       >
         {isLoading && !data ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
             <Spinner /> 正在加载 FAQ…
           </div>
         ) : null}
@@ -172,32 +173,35 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
             <TableWrap minWidthClass="min-w-[960px]">
               <thead>
                 <tr>
-                  <Th>问题</Th>
-                  <Th>标准答案</Th>
-                  <Th className="w-[100px]">分类</Th>
-                  <Th className="w-[80px]">命中次数</Th>
-                  <Th className="w-[110px]">缓存开关</Th>
-                  <Th className="w-[90px]">启用</Th>
-                  <Th className="w-[140px]">发布时间</Th>
+                  {/* 手机上只留问题 / 标准答案 / 操作；分类、命中次数、两个开关、发布时间改到 md 起 */}
+                  <Th className="min-w-[200px]">问题</Th>
+                  <Th className="min-w-[200px]">标准答案</Th>
+                  <Th className="hidden w-[100px] md:table-cell">分类</Th>
+                  <Th className="hidden w-[80px] md:table-cell">命中次数</Th>
+                  <Th className="hidden w-[110px] md:table-cell">缓存开关</Th>
+                  <Th className="hidden w-[90px] md:table-cell">启用</Th>
+                  <Th className="hidden w-[140px] md:table-cell">发布时间</Th>
                   <Th className="w-[170px]">操作</Th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-slate-50/70">
-                    <Td className="max-w-[280px]">
-                      <p className="truncate font-medium text-slate-800" title={entry.question}>
+                  <tr key={entry.id} className="hover:bg-subtle/70">
+                    <Td className="min-w-0 max-w-[280px]">
+                      <p className="truncate font-medium text-strong" title={entry.question}>
                         {entry.question}
                       </p>
                     </Td>
-                    <Td className="max-w-[320px]">
-                      <p className="line-clamp-2 text-xs text-slate-600" title={entry.answer}>
+                    <Td className="min-w-0 max-w-[320px]">
+                      <p className="line-clamp-2 text-xs break-words text-body" title={entry.answer}>
                         {entry.answer}
                       </p>
                     </Td>
-                    <Td className="text-xs text-slate-600">{entry.category}</Td>
-                    <Td className="text-xs text-slate-600">{formatNumber(entry.hit_count)}</Td>
-                    <Td>
+                    <Td className="hidden text-xs text-body md:table-cell">{entry.category}</Td>
+                    <Td className="hidden text-xs text-body md:table-cell">
+                      {formatNumber(entry.hit_count)}
+                    </Td>
+                    <Td className="hidden md:table-cell">
                       {canManage ? (
                         <Switch
                           checked={entry.cache_enabled}
@@ -217,7 +221,7 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
                         </Badge>
                       )}
                     </Td>
-                    <Td>
+                    <Td className="hidden md:table-cell">
                       {canManage ? (
                         <Switch
                           checked={entry.enabled}
@@ -232,10 +236,12 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
                         </Badge>
                       )}
                     </Td>
-                    <Td className="text-xs text-slate-500">{formatDateTime(entry.published_at)}</Td>
+                    <Td className="hidden text-xs text-muted md:table-cell">
+                      {formatDateTime(entry.published_at)}
+                    </Td>
                     <Td>
                       {canManage ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1">
                           <Button size="sm" onClick={() => setEditEntry(entry)}>
                             编辑
                           </Button>
@@ -244,7 +250,7 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-400">只读</span>
+                        <span className="text-xs text-faint">只读</span>
                       )}
                     </Td>
                   </tr>
@@ -286,9 +292,10 @@ export default function PublishedFaqTab({ can }: PublishedFaqProps) {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        {/* min-w-0 + break-words：FAQ 问题可能很长，窄屏下要能折行而不是撑宽底部抽屉 */}
+        <p className="text-sm break-words text-body">
           确定删除 FAQ
-          <span className="mx-1 font-medium text-slate-800">「{deleteEntry?.question}」</span>
+          <span className="mx-1 font-medium text-strong">「{deleteEntry?.question}」</span>
           吗？
         </p>
       </Modal>
@@ -372,7 +379,8 @@ function EntryEditForm({
           className="min-h-[140px]"
         />
       </Field>
-      <div className="grid gap-3 sm:grid-cols-3">
+      {/* 手机上单列：三个下拉并排会在 375px 上窄到点不准 */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Field label="分类">
           <Input value={category} onChange={(e) => setCategory(e.target.value)} />
         </Field>
@@ -395,7 +403,7 @@ function EntryEditForm({
           </Select>
         </Field>
       </div>
-      <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

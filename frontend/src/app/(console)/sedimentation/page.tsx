@@ -33,31 +33,31 @@ export default function SedimentationPage() {
   const [tab, setTab] = useState<TabKey>('mining')
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <header>
-        <h1 className="text-lg font-semibold text-slate-800">知识沉淀与运营管理</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-base font-semibold text-strong sm:text-lg">知识沉淀与运营管理</h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
           从真实提问中挖掘高频 FAQ 与知识缺口，人工审核后发布上线并写入缓存，形成知识运营闭环。
         </p>
       </header>
 
-      {/* Tab 切换 */}
-      <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-100">
+      {/* Tab 切换：窄屏纵向排列（说明文字较长，横排会被压成细长条） */}
+      <div className="flex flex-col gap-1 rounded-xl border border-line bg-canvas p-1.5 shadow-sm sm:flex-row sm:flex-wrap sm:gap-2">
         {TABS.map((item) => (
           <button
             key={item.key}
             type="button"
             onClick={() => setTab(item.key)}
             className={cn(
-              'flex-1 rounded-lg px-3 py-2 text-left transition-colors',
-              tab === item.key ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50',
+              'flex-1 touch-target rounded-lg px-3 py-2 text-left transition-colors',
+              tab === item.key ? 'bg-brand-soft text-brand-ink' : 'text-body hover:bg-subtle',
             )}
           >
             <span className="block text-sm font-medium">{item.label}</span>
             <span
               className={cn(
                 'mt-0.5 block text-xs',
-                tab === item.key ? 'text-indigo-500' : 'text-slate-400',
+                tab === item.key ? 'text-brand-ink/80' : 'text-faint',
               )}
             >
               {item.description}
@@ -70,7 +70,7 @@ export default function SedimentationPage() {
       {tab === 'published' ? <PublishedFaqTab can={can} /> : null}
       {tab === 'gaps' ? <GapTab can={can} /> : null}
 
-      <Card title="运营说明" bodyClassName="text-xs leading-relaxed text-slate-500">
+      <Card title="运营说明" bodyClassName="text-xs leading-relaxed text-muted">
         <ul className="list-inside list-disc space-y-1">
           <li>「立即挖掘」会扫描近期提问做向量聚类（参数请在服务端 .env 或挖掘配置中调整）。</li>
           <li>候选 FAQ 需要人工审核：可在线修改标准问题与答案，采纳后立即发布上线并写入 FAQ 缓存。</li>

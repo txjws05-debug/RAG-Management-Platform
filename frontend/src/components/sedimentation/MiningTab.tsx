@@ -110,7 +110,8 @@ export default function MiningTab({ can }: MiningTabProps) {
         description="对近段时间的高频提问做向量聚类，生成候选 FAQ；低于置信阈值的提问会进入知识缺口清单"
         bodyClassName="space-y-3"
       >
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {/* 手机上单列：四个字段并排会在 375px 上各自窄到无法辨认 */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="统计天数">
             <Select value={String(days)} onChange={(e) => setDays(Number(e.target.value))}>
               {[7, 14, 30, 60, 90, 180].map((d) => (
@@ -160,7 +161,8 @@ export default function MiningTab({ can }: MiningTabProps) {
         ) : null}
 
         {config ? (
-          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">            <span>挖掘配置：</span>
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+            <span>挖掘配置：</span>
             <Badge tone="slate">聚类相似度 {config.cluster_similarity.toFixed(2)}</Badge>
             <Badge tone="slate">最小频次 {config.min_frequency}</Badge>
             <Badge tone={config.cache_enabled ? 'emerald' : 'slate'}>
@@ -214,7 +216,7 @@ export default function MiningTab({ can }: MiningTabProps) {
         }
       >
         {isLoading && !data ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
             <Spinner /> 正在加载候选 FAQ…
           </div>
         ) : null}
@@ -315,8 +317,8 @@ function CandidateCard({
   }
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+    <article className="rounded-xl border border-line bg-canvas">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
@@ -324,9 +326,12 @@ function CandidateCard({
             <Badge tone={confidenceTone(candidate.confidence)}>
               置信度 {candidate.confidence.toFixed(2)}
             </Badge>
-            <span className="text-xs text-slate-400">创建于 {formatDateTime(candidate.created_at)}</span>
+            <span className="text-xs text-faint">创建于 {formatDateTime(candidate.created_at)}</span>
           </div>
-          <h4 className="mt-2 text-sm font-semibold text-slate-800">{candidate.canonical_question}</h4>
+          {/* break-words：候选问题是任意用户原话，可能是一串没有空格的专有名词 */}
+          <h4 className="mt-2 text-sm font-semibold break-words text-strong">
+            {candidate.canonical_question}
+          </h4>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => setOpen((v) => !v)}>
@@ -338,8 +343,8 @@ function CandidateCard({
       <div className="space-y-3 px-4 py-3">
         {/* 置信度条 */}
         <div className="flex items-center gap-2">
-          <span className="w-16 shrink-0 text-xs text-slate-400">置信度</span>
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+          <span className="w-16 shrink-0 text-xs text-faint">置信度</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-subtle">
             <div
               className={cn(
                 'h-full rounded-full',
@@ -352,33 +357,33 @@ function CandidateCard({
               style={{ width: `${Math.round(Math.max(0, Math.min(1, candidate.confidence)) * 100)}%` }}
             />
           </div>
-          <span className="w-10 shrink-0 text-right text-xs text-slate-500">
+          <span className="w-10 shrink-0 text-right text-xs text-muted">
             {Math.round(candidate.confidence * 100)}%
           </span>
         </div>
 
         {/* 聚类问题簇 */}
         <div>
-          <p className="text-xs font-medium text-slate-500">
+          <p className="text-xs font-medium text-muted">
             聚类问题簇（{candidate.sample_questions.length} 条样本）
           </p>
           <ul className="mt-1.5 space-y-1">
             {candidate.sample_questions.slice(0, open ? undefined : 3).map((q, idx) => (
               <li
                 key={`${candidate.id}-sample-${idx}`}
-                className="rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-600"
+                className="rounded-md bg-subtle px-2 py-1 text-xs break-words text-body"
               >
                 {q}
               </li>
             ))}
             {candidate.sample_questions.length === 0 ? (
-              <li className="text-xs text-slate-400">无样本问题</li>
+              <li className="text-xs text-faint">无样本问题</li>
             ) : null}
           </ul>
           {!open && candidate.sample_questions.length > 3 ? (
             <button
               type="button"
-              className="mt-1 text-xs text-indigo-600 hover:underline"
+              className="mt-1 text-xs text-brand-ink hover:underline touch-target"
               onClick={() => setOpen(true)}
             >
               展开其余 {candidate.sample_questions.length - 3} 条
@@ -388,7 +393,7 @@ function CandidateCard({
 
         {/* 关联知识单元 */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-slate-400">关联知识单元：</span>
+          <span className="text-xs text-faint">关联知识单元：</span>
           {candidate.related_documents.length > 0 ? (
             candidate.related_documents.map((doc) => (
               <Badge key={`${candidate.id}-${doc}`} tone="sky" title={doc}>
@@ -396,12 +401,12 @@ function CandidateCard({
               </Badge>
             ))
           ) : (
-            <span className="text-xs text-slate-400">未关联到现有知识单元</span>
+            <span className="text-xs text-faint">未关联到现有知识单元</span>
           )}
         </div>
 
         {open ? (
-          <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+          <div className="space-y-3 rounded-lg border border-line bg-subtle/60 p-3">
             {error ? <ErrorNote>{error}</ErrorNote> : null}
             <Field label="标准问题" hint="可在此修改，采纳后作为上线问题与向量依据">
               <TextArea
@@ -419,7 +424,8 @@ function CandidateCard({
                 placeholder={candidate.suggested_answer ? undefined : '该候选暂无推荐答案，请人工补充'}
               />
             </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
+            {/* 手机上单列：分类输入与两个按钮并排会被压得点不准 */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="FAQ 分类">
                 <Input
                   value={category}
@@ -427,7 +433,7 @@ function CandidateCard({
                   disabled={reviewed || !canManage}
                 />
               </Field>
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end gap-2">
                 <Button
                   variant="primary"
                   disabled={reviewed || !canManage}
@@ -447,18 +453,20 @@ function CandidateCard({
               </div>
             </div>
             {reviewed ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-faint">
                 该候选已{candidate.status === 'approved' ? '采纳发布' : '驳回'}，不可重复审核。
               </p>
             ) : null}
           </div>
         ) : (
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
-            <p className="text-xs text-slate-400">
+          <div className="rounded-lg bg-subtle px-3 py-2">
+            <p className="text-xs text-faint">
               推荐标准答案：{candidate.suggested_answer ? '已生成，展开可编辑' : '暂无，需要人工补充'}
             </p>
             {candidate.suggested_answer ? (
-              <p className="mt-1 line-clamp-2 text-xs text-slate-600">{candidate.suggested_answer}</p>
+              <p className="mt-1 line-clamp-2 text-xs break-words text-body">
+                {candidate.suggested_answer}
+              </p>
             ) : null}
           </div>
         )}

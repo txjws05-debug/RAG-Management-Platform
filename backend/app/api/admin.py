@@ -365,6 +365,7 @@ async def list_users(
             roles=role_map.get(u.id, []),
             enabled=u.enabled,
             is_superuser=u.is_superuser,
+            theme_preference=u.theme_preference or "system",
             created_at=u.created_at.isoformat() if u.created_at else None,
         ).model_dump()
         for u in rows

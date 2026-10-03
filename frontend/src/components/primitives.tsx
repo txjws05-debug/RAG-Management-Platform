@@ -2,7 +2,8 @@
 
 /**
  * 通用基础组件（全部 Tailwind 手写，不引入任何 UI 组件库）。
- * 企业后台 SaaS 风格：浅色主题、圆角卡片、border-slate-200、主色 indigo。
+ * 颜色一律使用 globals.css 的语义 token（bg-canvas / text-body / border-line…），
+ * 因此暗色主题由 <html data-theme> 自动接管，组件层不需要写 dark: 变体。
  */
 import type {
   ButtonHTMLAttributes,
@@ -20,6 +21,12 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ');
 }
 
+/**
+ * 触屏下把可点区抬到 ≥44px（见 globals.css 的 @media (hover: none)）。
+ * 桌面鼠标环境不生效，因此可以安全地内联进每个交互件。
+ */
+const TOUCH = 'touch-target';
+
 /* ------------------------------------------------------------------ */
 /* 按钮 / 加载态                                                       */
 /* ------------------------------------------------------------------ */
@@ -27,13 +34,14 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
+/* 品牌填充色与状态色是固定色对，刻意不参与主题化（暗色下把 indigo 调亮会变成浅底白字）。 */
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent disabled:bg-indigo-300',
+    'bg-brand text-white hover:bg-brand-dark border border-transparent disabled:bg-brand/50',
   secondary:
-    'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-60',
-  outline: 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 disabled:opacity-60',
-  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 border border-transparent',
+    'bg-brand-soft text-brand-ink hover:bg-raised border border-brand-ink/30 disabled:opacity-60',
+  outline: 'bg-canvas text-body hover:bg-subtle border border-line disabled:opacity-60',
+  ghost: 'bg-transparent text-body hover:bg-subtle border border-transparent',
   danger: 'bg-rose-600 text-white hover:bg-rose-700 border border-transparent disabled:bg-rose-300',
 };
 
@@ -68,8 +76,9 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-lg font-medium transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
         'disabled:cursor-not-allowed',
+        TOUCH,
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,
@@ -98,15 +107,15 @@ export function Spinner({ className }: { className?: string }) {
 /** 区块级加载态。 */
 export function Loading({ text = '加载中…', className }: { text?: string; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-center gap-2 py-10 text-slate-500', className)}>
-      <Spinner className="h-4 w-4 text-indigo-500" />
+    <div className={cn('flex items-center justify-center gap-2 py-10 text-muted', className)}>
+      <Spinner className="h-4 w-4 text-brand" />
       <span className="text-sm">{text}</span>
     </div>
   );
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-md bg-slate-100', className)} />;
+  return <div className={cn('animate-pulse rounded-md bg-subtle', className)} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,15 +136,15 @@ export function Card({ title, description, actions, children, className, bodyCla
   return (
     <section
       className={cn(
-        'rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-100',
+        'rounded-xl border border-line bg-canvas shadow-sm shadow-line',
         className,
       )}
     >
       {hasHeader ? (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-slate-800">{title}</h2>
-            {description ? <p className="mt-0.5 text-xs text-slate-500">{description}</p> : null}
+            <h2 className="truncate text-sm font-semibold text-strong">{title}</h2>
+            {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
           </div>
           {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
         </header>
@@ -147,14 +156,15 @@ export function Card({ title, description, actions, children, className, bodyCla
 
 export type StatTone = 'indigo' | 'emerald' | 'amber' | 'sky' | 'violet' | 'rose' | 'slate';
 
+/* indigo 与 slate 两档本质是「品牌浅底 / 中性浅底」，走 token 才能在暗色下自动翻转。 */
 const STAT_TONES: Record<StatTone, string> = {
-  indigo: 'bg-indigo-50 text-indigo-600',
+  indigo: 'bg-brand-soft text-brand-ink',
   emerald: 'bg-emerald-50 text-emerald-600',
   amber: 'bg-amber-50 text-amber-600',
   sky: 'bg-sky-50 text-sky-600',
   violet: 'bg-violet-50 text-violet-600',
   rose: 'bg-rose-50 text-rose-600',
-  slate: 'bg-slate-100 text-slate-600',
+  slate: 'bg-subtle text-body',
 };
 
 export interface StatCardProps {
@@ -168,9 +178,9 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, unit, hint, icon, tone = 'indigo' }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-100">
+    <div className="rounded-xl border border-line bg-canvas p-4 shadow-sm shadow-line">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="text-xs font-medium text-muted">{label}</p>
         {icon ? (
           <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg', STAT_TONES[tone])}>
             <Icon name={icon} className="h-4 w-4" />
@@ -178,10 +188,10 @@ export function StatCard({ label, value, unit, hint, icon, tone = 'indigo' }: St
         ) : null}
       </div>
       <p className="mt-2 flex items-baseline gap-1">
-        <span className="text-2xl font-semibold tracking-tight text-slate-800">{value}</span>
-        {unit ? <span className="text-xs text-slate-400">{unit}</span> : null}
+        <span className="text-2xl font-semibold tracking-tight text-strong">{value}</span>
+        {unit ? <span className="text-xs text-faint">{unit}</span> : null}
       </p>
-      {hint ? <p className="mt-1 text-xs text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-faint">{hint}</p> : null}
     </div>
   );
 }
@@ -192,9 +202,10 @@ export function StatCard({ label, value, unit, hint, icon, tone = 'indigo' }: St
 
 export type BadgeTone = 'slate' | 'indigo' | 'emerald' | 'amber' | 'rose' | 'sky' | 'violet';
 
+/* 状态色保持固定色对；slate / indigo 两档是中性或品牌浅底，改用 token。 */
 const BADGE_TONES: Record<BadgeTone, string> = {
-  slate: 'bg-slate-100 text-slate-600 border-slate-200',
-  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  slate: 'bg-subtle text-body border-line',
+  indigo: 'bg-brand-soft text-brand-ink border-brand-ink/30',
   emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   amber: 'bg-amber-50 text-amber-700 border-amber-200',
   rose: 'bg-rose-50 text-rose-700 border-rose-100',
@@ -259,15 +270,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center',
+        'flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-subtle/60 px-4 py-10 text-center',
         className,
       )}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-canvas text-faint shadow-sm">
         <Icon name={icon} className="h-4 w-4" />
       </span>
-      <p className="text-sm font-medium text-slate-600">{title}</p>
-      {description ? <p className="max-w-md text-xs text-slate-400">{description}</p> : null}
+      <p className="text-sm font-medium text-body">{title}</p>
+      {description ? <p className="max-w-md text-xs text-faint">{description}</p> : null}
       {action}
     </div>
   );
@@ -304,12 +315,15 @@ export function ErrorState({
 /* ------------------------------------------------------------------ */
 
 const FIELD_BASE =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 ' +
-  'placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 ' +
-  'disabled:bg-slate-50 disabled:text-slate-400';
+  'w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-strong ' +
+  'placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 ' +
+  'disabled:bg-subtle disabled:text-faint';
+
+/** h-10 sm:h-9：手机上 40px 才够手指点，桌面上保持原本紧凑的 36px。 */
+const FIELD_HEIGHT = 'h-10 sm:h-9';
 
 export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...rest} className={cn(FIELD_BASE, 'h-9', className)} />;
+  return <input {...rest} className={cn(FIELD_BASE, FIELD_HEIGHT, className)} />;
 }
 
 export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -318,7 +332,7 @@ export function TextArea({ className, ...rest }: TextareaHTMLAttributes<HTMLText
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select {...rest} className={cn(FIELD_BASE, 'h-9 pr-8', className)}>
+    <select {...rest} className={cn(FIELD_BASE, FIELD_HEIGHT, 'pr-8', className)}>
       {children}
     </select>
   );
@@ -339,12 +353,13 @@ export function Field({
 }) {
   return (
     <label className={cn('block space-y-1.5', className)}>
-      <span className="flex items-center gap-1 text-xs font-medium text-slate-600">
+      {/* 允许换行：长中文标签在 375px 上不该把表单顶出容器 */}
+      <span className="flex flex-wrap items-center gap-1 text-xs font-medium text-body">
         {label}
         {required ? <span className="text-rose-500">*</span> : null}
       </span>
       {children}
-      {hint ? <span className="block text-xs text-slate-400">{hint}</span> : null}
+      {hint ? <span className="block text-xs text-faint">{hint}</span> : null}
     </label>
   );
 }
@@ -362,7 +377,7 @@ export function Segmented<T extends string | number>({
   className?: string;
 }) {
   return (
-    <div className={cn('inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5', className)}>
+    <div className={cn('inline-flex rounded-lg border border-line bg-subtle p-0.5', className)}>
       {options.map((option) => {
         const active = option.value === value;
         return (
@@ -373,7 +388,8 @@ export function Segmented<T extends string | number>({
             aria-pressed={active}
             className={cn(
               'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-              active ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+              TOUCH,
+              active ? 'bg-canvas text-brand-ink shadow-sm' : 'text-muted hover:text-body',
             )}
           >
             {option.label}
@@ -429,6 +445,7 @@ export function DataTable<T>({
     return <>{empty ?? <EmptyState title="暂无数据" />}</>;
   }
   return (
+    /* 外层负责横向滚动，min-width 只加在 table 上，不给页面制造横向滚动 */
     <div className="overflow-x-auto">
       <table className={cn('w-full border-collapse text-sm', minWidthClass)}>
         <thead>
@@ -438,7 +455,8 @@ export function DataTable<T>({
                 key={column.key}
                 style={column.width ? { width: column.width } : undefined}
                 className={cn(
-                  'border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 text-xs font-semibold whitespace-nowrap text-slate-500',
+                  // 表头不再 whitespace-nowrap：中文表头在窄屏折行，比撑宽表格更好
+                  'border-b border-line bg-subtle/80 px-2 py-2 text-xs font-semibold text-muted sm:px-3 sm:py-2.5',
                   ALIGN[column.align ?? 'left'],
                   column.className,
                 )}
@@ -455,14 +473,14 @@ export function DataTable<T>({
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={cn(
                 'transition-colors',
-                onRowClick ? 'cursor-pointer hover:bg-slate-50' : 'hover:bg-slate-50/60',
+                onRowClick ? 'cursor-pointer hover:bg-subtle' : 'hover:bg-subtle/60',
               )}
             >
               {columns.map((column) => (
                 <td
                   key={column.key}
                   className={cn(
-                    'border-b border-slate-100 px-3 py-2.5 align-middle text-slate-700',
+                    'border-b border-line px-2 py-2 align-middle text-body sm:px-3 sm:py-2.5',
                     ALIGN[column.align ?? 'left'],
                     column.className,
                   )}
@@ -513,29 +531,41 @@ export function Modal({
   if (!open) return null;
 
   return (
+    /* 手机上贴底弹出（items-end，无外边距），桌面恢复居中卡片；高度用 dvh，
+       因为移动端地址栏会改变可视高度，vh 会算大并把底部按钮挤出屏幕。 */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
     >
-      <div className={cn('my-auto w-full rounded-xl border border-slate-200 bg-white shadow-xl', widthClass)}>
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-3.5">
+      <div
+        className={cn(
+          'flex max-h-[92dvh] w-full flex-col border border-line bg-canvas shadow-xl',
+          'rounded-t-2xl sm:max-h-[85dvh] sm:rounded-2xl',
+          widthClass,
+        )}
+      >
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-4 py-3.5 sm:px-5">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-            {description ? <p className="mt-0.5 text-xs text-slate-500">{description}</p> : null}
+            <h3 className="text-sm font-semibold text-strong">{title}</h3>
+            {description ? <p className="mt-0.5 text-xs text-muted">{description}</p> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭"
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className={cn(
+              '-mr-1 shrink-0 rounded-md p-1 text-muted hover:bg-subtle hover:text-body',
+              TOUCH,
+            )}
           >
             <Icon name="close" className="h-4 w-4" />
           </button>
         </header>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+        {/* 头尾固定、仅内容区滚动，保证手机抽屉的底部按钮始终可点 */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
         {footer ? (
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-5 py-3">
+          <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-4 py-3 pb-safe sm:px-5">
             {footer}
           </footer>
         ) : null}

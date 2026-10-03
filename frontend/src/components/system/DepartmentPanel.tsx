@@ -87,7 +87,7 @@ export default function DepartmentPanel({ can }: DepartmentPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {noticeNode}
 
       <Card
@@ -108,7 +108,7 @@ export default function DepartmentPanel({ can }: DepartmentPanelProps) {
         bodyClassName="space-y-3"
       >
         {isLoading ? (
-          <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-8 text-sm text-muted">
             <Spinner /> 正在加载部门树…
           </div>
         ) : null}
@@ -120,43 +120,56 @@ export default function DepartmentPanel({ can }: DepartmentPanelProps) {
 
         {flat.length > 0 ? (
           <>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
               <Badge tone="indigo">部门总数 {flat.length}</Badge>
               <Badge tone="slate">在册用户（部门归属计数）{totalUsers}</Badge>
             </div>
-            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+            <ul className="divide-y divide-line rounded-lg border border-line">
               {flat.map(({ node, depth }) => (
                 <li
                   key={node.id}
                   className={cn(
-                    'flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 hover:bg-slate-50/70',
-                    selectedId === node.id && 'bg-indigo-50/60',
+                    'flex flex-wrap items-center justify-between gap-2 px-2 py-2.5 hover:bg-subtle/70 sm:px-3',
+                    selectedId === node.id && 'bg-brand-soft/60',
                     !node.enabled && 'opacity-60',
                   )}
                 >
                   <button
                     type="button"
                     onClick={() => setSelectedId(node.id === selectedId ? null : node.id)}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                    style={{ paddingLeft: depth * 20 }}
+                    // 缩进步长做成响应式：窄屏每级更小，深层部门不会把名称挤到看不见
+                    className={cn(
+                      'flex min-w-0 flex-1 touch-target items-center gap-2 py-1.5 text-left',
+                      depth === 0
+                        ? 'pl-1'
+                        : depth === 1
+                          ? 'pl-3 sm:pl-5'
+                          : 'pl-5 sm:pl-9',
+                    )}
                   >
-                    <span className="text-slate-300">{depth === 0 ? '▣' : '└'}</span>
-                    <span className="truncate text-sm font-medium text-slate-800">{node.name}</span>
-                    <span className="shrink-0 text-xs text-slate-400">{node.code}</span>
+                    <span className="text-faint">{depth === 0 ? '▣' : '└'}</span>
+                    <span className="truncate text-sm font-medium text-strong">{node.name}</span>
+                    <span className="shrink-0 text-xs text-faint">{node.code}</span>
                     <Badge tone={node.user_count > 0 ? 'indigo' : 'slate'}>
                       {node.user_count} 人
                     </Badge>
                     {!node.enabled ? <Badge tone="rose">已停用</Badge> : null}
                   </button>
                   {canManage ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Button size="sm" onClick={() => openCreate(node)}>
+                    // 触屏上按钮整行折到名称下方并各自撑满，避免三个小按钮挤在一行难点
+                    <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
+                      <Button size="sm" className="flex-1 sm:flex-none" onClick={() => openCreate(node)}>
                         新增子部门
                       </Button>
-                      <Button size="sm" onClick={() => openEdit(node)}>
+                      <Button size="sm" className="flex-1 sm:flex-none" onClick={() => openEdit(node)}>
                         编辑
                       </Button>
-                      <Button size="sm" variant="danger" onClick={() => setDeleteTarget(node)}>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        className="flex-1 sm:flex-none"
+                        onClick={() => setDeleteTarget(node)}
+                      >
                         删除
                       </Button>
                     </div>
@@ -196,9 +209,9 @@ export default function DepartmentPanel({ can }: DepartmentPanelProps) {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-body">
           确定删除部门
-          <span className="mx-1 font-medium text-slate-800">「{deleteTarget?.name}」</span>
+          <span className="mx-1 font-medium text-strong">「{deleteTarget?.name}」</span>
           （{deleteTarget?.code}）吗？
         </p>
         {deleteTarget && deleteTarget.user_count > 0 ? (
@@ -346,7 +359,8 @@ function DepartmentForm({
           </Select>
         </Field>
       </div>
-      <div className="flex items-center justify-end gap-2 pt-1">
+      {/* 底部按钮：窄屏铺满整行，拇指更容易点到 */}
+      <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

@@ -27,6 +27,7 @@ import {
   type UserProfile,
 } from '@/lib/api';
 import { hasAnyPermission, hasPermission } from '@/lib/permissions';
+import { useTheme } from '@/lib/theme';
 
 interface AuthContextValue {
   /** 当前登录用户；null 表示未登录或校验中。 */
@@ -56,9 +57,9 @@ function InlineSpinner({ className = 'h-5 w-5' }: { className?: string }) {
 /** 全屏加载占位（登录态校验、跳转过渡时使用）。 */
 export function FullPageLoading({ text = '正在加载…' }: { text?: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50 text-slate-500">
-      <InlineSpinner className="h-6 w-6 text-indigo-500" />
-      <p className="text-sm">{text}</p>
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-subtle px-4 text-muted">
+      <InlineSpinner className="h-6 w-6 text-brand" />
+      <p className="text-center text-sm">{text}</p>
     </div>
   );
 }
@@ -68,6 +69,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { applyServerPreference } = useTheme();
+
+  /**
+   * 登录态就绪后，把服务端保存的主题偏好应用一次。
+   *
+   * 时机是刻意的：首帧渲染必须用 localStorage 的值（否则会闪屏），
+   * 而服务端偏好只有拿到用户档案后才知道，因此放在这里做一次"补齐"。
+   * `applyServerPreference` 在本地已有显式选择时不会覆盖，避免把用户
+   * 在当前设备上的选择改回去。
+   */
+  useEffect(() => {
+    if (!user) return;
+    applyServerPreference(user.theme_preference);
+  }, [user, applyServerPreference]);
 
   /** 启动校验：有 token 就调 /auth/me 确认是否仍然有效。 */
   useEffect(() => {
@@ -158,20 +173,20 @@ export function useAuth(): AuthContextValue {
 /** 权限不足时的居中提示面板。 */
 function ForbiddenPanel({ text }: { text: string }) {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center p-6">
+    <div className="flex min-h-[50vh] items-center justify-center p-3 sm:min-h-[60vh] sm:p-6">
       <div
         role="alert"
-        className="w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 px-5 py-6 text-center"
+        className="w-full max-w-md rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-5 text-center dark:border-amber-700/50 dark:bg-amber-950/40 sm:px-5 sm:py-6"
       >
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/60 dark:text-amber-300">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
             <path d="M12 9v4" strokeLinecap="round" />
             <path d="M12 17h.01" strokeLinecap="round" />
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" strokeLinejoin="round" />
           </svg>
         </div>
-        <p className="text-sm font-semibold text-amber-800">访问受限</p>
-        <p className="mt-1 text-xs leading-relaxed text-amber-700">{text}</p>
+        <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">访问受限</p>
+        <p className="mt-1 text-xs leading-relaxed text-amber-700 dark:text-amber-300/90">{text}</p>
       </div>
     </div>
   );

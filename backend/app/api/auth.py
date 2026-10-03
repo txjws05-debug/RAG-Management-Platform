@@ -14,6 +14,7 @@ from app.schemas import (
     LoginRequest,
     LoginResponse,
     RoleBrief,
+    ThemePreferenceUpdate,
     UserProfile,
     ok,
 )
@@ -52,6 +53,7 @@ async def build_profile(db: AsyncSession, user: User) -> UserProfile:
         department=department,
         roles=roles,
         permissions=sorted(ctx.permission_codes),
+        theme_preference=user.theme_preference or "system",
     )
 
 
@@ -90,3 +92,19 @@ async def me(
     user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     return ok((await build_profile(db, user)).model_dump())
+
+
+@router.put("/auth/preferences", response_model=dict)
+async def update_preferences(
+    payload: ThemePreferenceUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """保存界面偏好（当前只有主题）。
+
+    前端在切换主题时同时写 localStorage 与这里：localStorage 保证首帧不闪烁，
+    服务端这份保证换设备 / 换浏览器 / 清缓存后偏好仍在。
+    """
+    user.theme_preference = payload.theme_preference
+    await db.flush()
+    return ok({"theme_preference": user.theme_preference})

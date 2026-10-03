@@ -127,6 +127,12 @@ class User(Base, TimestampMixin):
     )
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # 界面主题偏好：system（跟随系统）| light | dark
+    # 存服务端是为了跨设备/换浏览器保持一致；前端仍会在 localStorage 缓存一份，
+    # 因为首帧渲染前拿不到接口数据，必须靠本地值避免主题闪烁。
+    theme_preference: Mapped[str] = mapped_column(
+        String(16), default="system", server_default="system", nullable=False
+    )
 
     department: Mapped[Department | None] = relationship(back_populates="users")
     roles: Mapped[list[Role]] = relationship(secondary="user_roles", back_populates="users")

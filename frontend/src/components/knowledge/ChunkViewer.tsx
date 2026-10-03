@@ -54,7 +54,7 @@ export default function ChunkViewer({ open, document, onClose }: Props) {
     >
       <div className="space-y-3">
         {isLoading ? (
-          <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-8 text-sm text-muted">
             <Spinner /> 正在加载切片…
           </div>
         ) : null}
@@ -68,15 +68,17 @@ export default function ChunkViewer({ open, document, onClose }: Props) {
         ) : null}
 
         {(data?.items ?? []).map((chunk) => (
-          <article key={chunk.id} className="rounded-lg border border-slate-200 bg-white">
-            <header className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-              <div className="flex items-center gap-2">
+          <article key={chunk.id} className="rounded-lg border border-line bg-canvas">
+            {/* 窄屏下标题与字数各占一行：flex-wrap 让它们自然折行而不是挤在一起 */}
+            <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-3 py-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <Badge tone="indigo">#{chunk.ordinal}</Badge>
-                <span className="text-xs text-slate-400">切片 ID {chunk.id}</span>
+                {/* min-w-0 + break-all：切片 ID 是长数字串，不折行会把头部顶宽 */}
+                <span className="min-w-0 break-all text-xs text-faint">切片 ID {chunk.id}</span>
               </div>
-              <span className="text-xs text-slate-400">{formatNumber(chunk.char_count)} 字</span>
+              <span className="shrink-0 text-xs text-faint">{formatNumber(chunk.char_count)} 字</span>
             </header>
-            <pre className="max-h-72 overflow-y-auto px-3 py-2.5 text-xs leading-relaxed break-words whitespace-pre-wrap text-slate-700">
+            <pre className="max-h-72 overflow-y-auto px-3 py-2.5 text-xs leading-relaxed break-words whitespace-pre-wrap text-body">
               {chunk.content}
             </pre>
           </article>

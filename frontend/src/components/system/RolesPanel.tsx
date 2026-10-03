@@ -88,7 +88,7 @@ export default function RolesPanel({ can }: RolesPanelProps) {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {noticeNode}
 
       <Card
@@ -116,7 +116,7 @@ export default function RolesPanel({ can }: RolesPanelProps) {
         }
       >
         {isLoading ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
             <Spinner /> 正在加载角色…
           </div>
         ) : null}
@@ -128,22 +128,22 @@ export default function RolesPanel({ can }: RolesPanelProps) {
 
         {(roles ?? []).length > 0 ? (
           <div className="space-y-2">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-faint">
               权限点共 {permissionTotal} 个（含菜单级与操作级）
             </p>
             {(roles ?? []).map((role) => (
               <div
                 key={role.id}
                 className={cn(
-                  'rounded-xl border border-slate-200 bg-white px-4 py-3',
+                  'rounded-xl border border-line bg-canvas px-3 py-3 sm:px-4',
                   !role.enabled && 'opacity-60',
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-semibold text-slate-800">{role.name}</h4>
-                      <span className="font-mono text-xs text-slate-400">{role.code}</span>
+                      <h4 className="text-sm font-semibold text-strong">{role.name}</h4>
+                      <span className="font-mono text-xs text-faint">{role.code}</span>
                       {role.is_builtin ? <Badge tone="violet">内置角色</Badge> : null}
                       <Badge tone={role.enabled ? 'emerald' : 'slate'}>
                         {role.enabled ? '启用中' : '已停用'}
@@ -151,11 +151,12 @@ export default function RolesPanel({ can }: RolesPanelProps) {
                       <Badge tone="indigo">{role.permission_codes.length} 个权限点</Badge>
                     </div>
                     {role.description ? (
-                      <p className="mt-1 text-xs text-slate-500">{role.description}</p>
+                      <p className="mt-1 text-xs text-muted">{role.description}</p>
                     ) : null}
                   </div>
                   {canManage ? (
-                    <div className="flex flex-wrap items-center gap-2">
+                    // 窄屏操作区整行折到角色名下方，开关与两个按钮都能轻松点到
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                       <Switch
                         checked={role.enabled}
                         disabled={busyId === role.id}
@@ -191,7 +192,7 @@ export default function RolesPanel({ can }: RolesPanelProps) {
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-xs text-slate-400">未分配任何权限点</span>
+                    <span className="text-xs text-faint">未分配任何权限点</span>
                   )}
                 </div>
               </div>
@@ -228,9 +229,9 @@ export default function RolesPanel({ can }: RolesPanelProps) {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-body">
           确定删除角色
-          <span className="mx-1 font-medium text-slate-800">「{deleteTarget?.name}」</span>
+          <span className="mx-1 font-medium text-strong">「{deleteTarget?.name}」</span>
           （{deleteTarget?.code}）吗？
         </p>
       </Modal>
@@ -270,34 +271,38 @@ function PermissionTreeItem({
 
   return (
     <div>
+      {/* 缩进步长做成响应式：窄屏每级更小，深层权限点不会被挤出可视区 */}
       <div
-        className="flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-slate-50"
-        style={{ paddingLeft: depth * 16 + 4 }}
+        className={cn(
+          'flex touch-target items-center gap-1.5 rounded-md py-1 pr-1 hover:bg-subtle',
+          depth === 0 ? 'pl-1' : depth === 1 ? 'pl-3 sm:pl-5' : 'pl-5 sm:pl-8',
+        )}
       >
         {node.children.length > 0 ? (
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="w-4 shrink-0 text-xs text-slate-400 hover:text-slate-600"
+            className="flex h-6 w-6 shrink-0 touch-target items-center justify-center text-xs text-faint hover:text-body"
             aria-label={open ? '折叠' : '展开'}
           >
             {open ? '▾' : '▸'}
           </button>
         ) : (
-          <span className="w-4 shrink-0" />
+          <span className="w-6 shrink-0" />
         )}
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-0.5">
           <input
             type="checkbox"
-            className="h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-200"
+            className="h-4 w-4 shrink-0 cursor-pointer rounded border-line-strong text-indigo-600 focus:ring-2 focus:ring-indigo-200"
             checked={checked}
             ref={(el) => {
               if (el) el.indeterminate = indeterminate
             }}
             onChange={(e) => toggle(e.target.checked)}
           />
-          <span className="truncate text-sm text-slate-700">{node.name}</span>
-          <span className="shrink-0 font-mono text-xs text-slate-400">{node.code}</span>
+          <span className="truncate text-sm text-body">{node.name}</span>
+          {/* 权限码在窄屏隐藏：与名称同抢一行会把两者都截断 */}
+          <span className="hidden shrink-0 font-mono text-xs text-faint sm:inline">{node.code}</span>
           {node.kind === 'menu' ? (
             <Badge tone="sky" className="shrink-0">
               菜单
@@ -308,7 +313,9 @@ function PermissionTreeItem({
             </Badge>
           )}
           {node.children.length > 0 ? (
-            <span className="shrink-0 text-xs text-slate-400">{countLeaves(node)} 项</span>
+            <span className="hidden shrink-0 text-xs text-faint sm:inline">
+              {countLeaves(node)} 项
+            </span>
           ) : null}
         </label>
       </div>
@@ -462,13 +469,13 @@ function RoleForm({
         label="功能权限树"
         hint={`已选 ${selected.size} / ${allCodes.length} 个权限点（含自动联动的父节点）`}
       >
-        <div className="max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 px-2 py-2">
+        <div className="max-h-72 overflow-y-auto rounded-lg border border-line bg-subtle/50 px-2 py-2">
           {treeLoading ? (
-            <div className="flex items-center gap-2 px-2 py-3 text-xs text-slate-500">
+            <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted">
               <Spinner className="h-3.5 w-3.5" /> 正在加载权限树…
             </div>
           ) : tree.length === 0 ? (
-            <p className="px-2 py-3 text-xs text-slate-400">暂无权限点数据</p>
+            <p className="px-2 py-3 text-xs text-faint">暂无权限点数据</p>
           ) : (
             tree.map((node) => (
               <PermissionTreeItem
@@ -483,7 +490,7 @@ function RoleForm({
         </div>
       </Field>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

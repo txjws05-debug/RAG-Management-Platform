@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * 运营看板：PV/UV、知识量、Token 消耗、响应延时分布与热榜。
@@ -64,7 +64,17 @@ const PALETTE = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444
 
 const BASE_GRID = { left: 12, right: 20, top: 36, bottom: 8, containLabel: true };
 
-const BASE_TEXT_STYLE = { fontSize: 11, color: '#64748b' };
+/**
+ * 图表文字与轴线的颜色用 `'@token:xxx'` 占位符表达语义角色。
+ *
+ * ECharts 把颜色画进 canvas，读不到 CSS 变量，所以不能直接写 `var(--color-muted)`；
+ * 而写死 `#64748b` 这类十六进制值会让暗色主题下的图表停留在亮色配色。
+ * `Chart.tsx` 会在渲染时（并按主题变化重算）把这些占位符解析成当前主题的实际色值，
+ * 见 `src/lib/chartTheme.ts`。
+ *
+ * 系列色（PALETTE）保持固定，符合规范：品牌色与状态色不参与主题反转。
+ */
+const BASE_TEXT_STYLE = { fontSize: 11, color: '@token:label' };
 
 /** 访问量趋势：PV + UV 双折线。 */
 function buildVisitOption(data: DashboardPayload['visit_trend']): EChartsOption {
@@ -78,12 +88,12 @@ function buildVisitOption(data: DashboardPayload['visit_trend']): EChartsOption 
       type: 'category',
       boundaryGap: false,
       data: data.map((item) => item.label),
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLine: { lineStyle: { color: '@token:axis' } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
+      splitLine: { lineStyle: { color: '@token:split' } },
       axisLine: { show: false },
     },
     series: [
@@ -117,12 +127,12 @@ function buildTokenOption(data: DashboardPayload['token_trend']): EChartsOption 
     xAxis: {
       type: 'category',
       data: data.map((item) => item.label),
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLine: { lineStyle: { color: '@token:axis' } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
+      splitLine: { lineStyle: { color: '@token:split' } },
       axisLine: { show: false },
     },
     series: [
@@ -147,12 +157,12 @@ function buildLatencyOption(data: DashboardPayload['latency_distribution']): ECh
     xAxis: {
       type: 'category',
       data: data.map((item) => item.label),
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLine: { lineStyle: { color: '@token:axis' } },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
+      splitLine: { lineStyle: { color: '@token:split' } },
       axisLine: { show: false },
     },
     series: [
@@ -182,13 +192,13 @@ function buildHorizontalOption(
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     xAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: '#f1f5f9' } },
+      splitLine: { lineStyle: { color: '@token:split' } },
       axisLine: { show: false },
     },
     yAxis: {
       type: 'category',
       data: reversed.map((row) => (row.name.length > 18 ? `${row.name.slice(0, 18)}…` : row.name)),
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLine: { lineStyle: { color: '@token:axis' } },
       axisTick: { show: false },
     },
     series: [
@@ -197,7 +207,7 @@ function buildHorizontalOption(
         type: 'bar',
         barMaxWidth: 14,
         itemStyle: { borderRadius: [0, 4, 4, 0] },
-        label: { show: true, position: 'right', fontSize: 10, color: '#94a3b8' },
+        label: { show: true, position: 'right', fontSize: 10, color: '@token:faint' },
         data: reversed.map((row) => row.value),
       },
     ],
@@ -218,7 +228,7 @@ function buildDepartmentOption(data: DashboardPayload['department_question_rank'
         radius: ['42%', '68%'],
         center: ['50%', '44%'],
         avoidLabelOverlap: true,
-        itemStyle: { borderColor: '#fff', borderWidth: 2 },
+        itemStyle: { borderColor: '@token:canvas', borderWidth: 2 },
         label: { show: false },
         data: data.map((item) => ({ name: item.name, value: item.value })),
       },
@@ -267,20 +277,20 @@ function DashboardContent() {
   );
 
   return (
-    <div className="space-y-4">
-      {/* 工具条 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Icon name="dashboard" className="h-4 w-4 text-indigo-500" />
+    <div className="space-y-3 sm:space-y-4">
+      {/* 工具条：窄屏分段控件占满整行，避免与刷新按钮互相挤压 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <Icon name="dashboard" className="h-4 w-4 text-brand-ink" />
           <span>统计范围：最近 {days} 天</span>
-          {isLoading && data ? <span className="text-slate-400">· 正在刷新…</span> : null}
+          {isLoading && data ? <span className="text-faint">· 正在刷新…</span> : null}
         </div>
-        <div className="flex items-center gap-2">
-          <Segmented options={DAY_OPTIONS} value={days} onChange={setDays} />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <Segmented options={DAY_OPTIONS} value={days} onChange={setDays} className="flex-1 sm:flex-none" />
           <button
             type="button"
             onClick={() => void mutate()}
-            className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-600 hover:bg-slate-50"
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-line bg-canvas px-2.5 text-xs text-body hover:bg-subtle"
           >
             <Icon name="refresh" className="h-3.5 w-3.5" />
             刷新
@@ -296,8 +306,8 @@ function DashboardContent() {
 
       {overview ? (
         <>
-          {/* 指标卡 */}
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {/* 指标卡：手机保持两列（一列会浪费纵向空间），宽屏四列 */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="提问量 / 提问人数（PV / UV）"
               value={`${formatInt(overview.pv)} / ${formatInt(overview.uv)}`}
@@ -360,8 +370,8 @@ function DashboardContent() {
             />
           </div>
 
-          {/* 趋势图 */}
-          <div className="grid gap-4 xl:grid-cols-2">
+          {/* 趋势图：手机单列，宽屏两列 */}
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
             <Card
               title="访问量趋势"
               description="每日提问量（PV）与独立提问人数（UV）"
@@ -375,7 +385,7 @@ function DashboardContent() {
             </Card>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
             <Card title="响应延时分布" description="按区间统计回答数量" bodyClassName="pt-2">
               <Chart option={latencyOption} height={280} />
             </Card>
@@ -389,7 +399,7 @@ function DashboardContent() {
             </Card>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
             <Card
               title="常见问题 TOP"
               description="高频提问排行（取前 10）"

@@ -39,24 +39,25 @@ function CodeBlock({ children }: { children?: ReactNode }) {
   };
 
   return (
-    <div className="my-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100/80 px-3 py-1.5">
-        <span className="text-[11px] font-medium tracking-wide text-slate-500">代码</span>
+    <div className="my-3 overflow-hidden rounded-lg border border-line bg-subtle text-strong">
+      <div className="flex items-center justify-between border-b border-line bg-subtle/80 px-3 py-1.5">
+        <span className="text-[11px] font-medium tracking-wide text-muted">代码</span>
         <button
           type="button"
           onClick={copy}
           className={cn(
-            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors',
+            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors touch-target',
             copied
               ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-              : 'border-slate-200 bg-white text-slate-500 hover:text-indigo-600',
+              : 'border-line bg-canvas text-muted hover:text-brand-ink',
           )}
         >
           <Icon name={copied ? 'check' : 'copy'} className="h-3 w-3" />
           {copied ? '已复制' : '复制'}
         </button>
       </div>
-      <pre className="overflow-x-auto px-3 py-3 text-xs leading-relaxed">{children}</pre>
+      {/* overflow-x-auto + min-w-0：长代码行在窄屏横向滚动，而不是把气泡撑宽 */}
+      <pre className="min-w-0 overflow-x-auto px-3 py-3 text-xs leading-relaxed">{children}</pre>
     </div>
   );
 }
@@ -72,14 +73,14 @@ const COMPONENTS: Components = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-indigo-600 underline decoration-indigo-200 underline-offset-2 hover:text-indigo-700"
+      className="break-words text-brand-ink underline decoration-brand-ink/40 underline-offset-2 hover:text-brand-dark"
     >
       {children}
     </a>
   ),
-  // 表格外层包一层横向滚动，窄屏不撑破气泡
+  // 用 globals.css 的 .table-scroll（含 -webkit-overflow-scrolling）包一层，窄屏不撑破气泡
   table: ({ children }) => (
-    <div className="my-3 overflow-x-auto">
+    <div className="table-scroll my-3">
       <table>{children}</table>
     </div>
   ),

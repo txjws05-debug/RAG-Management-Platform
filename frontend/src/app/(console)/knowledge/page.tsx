@@ -142,7 +142,7 @@ export default function KnowledgePage() {
   const totalChunks = (data?.items ?? []).reduce((sum, d) => sum + d.chunk_count, 0)
 
   const overview = [
-    { label: '知识单元总数', value: formatNumber(data?.total ?? 0), color: 'text-indigo-600' },
+    { label: '知识单元总数', value: formatNumber(data?.total ?? 0), color: 'text-brand-ink' },
     {
       label: '本页已就绪',
       value: formatNumber((data?.items ?? []).filter((d) => d.status === 'ready').length),
@@ -159,18 +159,25 @@ export default function KnowledgePage() {
   ]
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+    <div className="space-y-3 sm:space-y-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">知识维护与导入中心</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-base font-semibold text-strong sm:text-lg">知识维护与导入中心</h1>
+          <p className="mt-1 text-xs text-muted sm:text-sm">
             统一管理知识单元台账：上传导入、解析状态跟踪、切片查看与四维数据权限分配。
           </p>
         </div>
+        {/* 窄屏按钮铺满整行，避免两个按钮被挤成细条 */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={refreshAll}>刷新</Button>
+          <Button className="flex-1 sm:flex-none" onClick={refreshAll}>
+            刷新
+          </Button>
           {can('knowledge:upload') || can('knowledge:manage') ? (
-            <Button variant="primary" onClick={() => setUploadOpen(true)}>
+            <Button
+              variant="primary"
+              className="flex-1 sm:flex-none"
+              onClick={() => setUploadOpen(true)}
+            >
               上传 / 批量导入
             </Button>
           ) : null}
@@ -180,15 +187,15 @@ export default function KnowledgePage() {
       {noticeNode}
       {actionError ? <ErrorNote>{actionError}</ErrorNote> : null}
 
-      {/* 概览 */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 概览：手机上两列比一列更省纵向空间 */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {overview.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm shadow-slate-100"
+            className="rounded-xl border border-line bg-canvas px-3 py-3 shadow-sm sm:px-4"
           >
-            <p className="text-xs text-slate-500">{item.label}</p>
-            <p className={cn('mt-1 text-xl font-semibold', item.color)}>{item.value}</p>
+            <p className="text-xs text-muted">{item.label}</p>
+            <p className={cn('mt-1 text-lg font-semibold sm:text-xl', item.color)}>{item.value}</p>
           </div>
         ))}
       </div>
@@ -198,8 +205,8 @@ export default function KnowledgePage() {
         description="支持按关键词、分类、格式与解析状态筛选；权限标签来自四维数据权限配置结果"
         bodyClassName="space-y-3"
       >
-        {/* 筛选 */}
-        <div className="grid gap-2 md:grid-cols-4 lg:grid-cols-5">
+        {/* 筛选：手机单列堆叠，下拉与按钮占满宽度便于点按 */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <Input
             value={keyword}
             onChange={(e) => {
@@ -207,6 +214,7 @@ export default function KnowledgePage() {
               setPage(1)
             }}
             placeholder="搜索标题或编号"
+            className="w-full"
           />
           <Select
             value={category}
@@ -214,6 +222,7 @@ export default function KnowledgePage() {
               setCategory(e.target.value)
               setPage(1)
             }}
+            className="w-full"
           >
             <option value="">全部分类</option>
             {(categories ?? []).map((c) => (
@@ -228,6 +237,7 @@ export default function KnowledgePage() {
               setFileType(e.target.value)
               setPage(1)
             }}
+            className="w-full"
           >
             <option value="">全部格式</option>
             {FILE_TYPES.map((t) => (
@@ -242,6 +252,7 @@ export default function KnowledgePage() {
               setStatus(e.target.value)
               setPage(1)
             }}
+            className="w-full"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
@@ -249,13 +260,15 @@ export default function KnowledgePage() {
               </option>
             ))}
           </Select>
-          <Button onClick={resetFilters}>重置筛选</Button>
+          <Button className="w-full" onClick={resetFilters}>
+            重置筛选
+          </Button>
         </div>
 
         {/* 分类快捷筛选 */}
         {(categories ?? []).length > 0 ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-slate-400">分类快捷筛选：</span>
+            <span className="text-xs text-faint">分类快捷筛选：</span>
             <button
               type="button"
               onClick={() => {
@@ -263,10 +276,10 @@ export default function KnowledgePage() {
                 setPage(1)
               }}
               className={cn(
-                'rounded-md border px-2 py-0.5 text-xs',
+                'touch-target rounded-md border px-2 py-0.5 text-xs',
                 category === ''
-                  ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                  ? 'border-brand-ink/30 bg-brand-soft text-brand-ink'
+                  : 'border-line bg-canvas text-body hover:bg-subtle',
               )}
             >
               全部
@@ -280,14 +293,14 @@ export default function KnowledgePage() {
                   setPage(1)
                 }}
                 className={cn(
-                  'rounded-md border px-2 py-0.5 text-xs',
+                  'touch-target rounded-md border px-2 py-0.5 text-xs',
                   category === c.name
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
+                    ? 'border-brand-ink/30 bg-brand-soft text-brand-ink'
+                    : 'border-line bg-canvas text-body hover:bg-subtle',
                 )}
               >
                 {c.name}
-                <span className="ml-1 text-slate-400">{c.count}</span>
+                <span className="ml-1 text-faint">{c.count}</span>
               </button>
             ))}
           </div>
@@ -312,7 +325,7 @@ export default function KnowledgePage() {
       </Card>
 
       {!can('knowledge:grant') ? (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-faint">
           当前账号没有「knowledge:grant」权限码，因此不显示权限配置按钮。
         </p>
       ) : null}
@@ -366,9 +379,9 @@ export default function KnowledgePage() {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-body">
           确定要删除知识单元
-          <span className="mx-1 font-medium text-slate-800">「{deleteDoc?.title}」</span>
+          <span className="mx-1 font-medium text-strong">「{deleteDoc?.title}」</span>
           吗？
         </p>
         {deleteDoc ? (
@@ -456,17 +469,18 @@ function EditDocumentForm({
         <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="未分类" />
       </Field>
       <Field label="启用状态" hint="停用后该知识单元不参与检索问答">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-body touch-target">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+            className="h-4 w-4 rounded border-line-strong text-indigo-600"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
           />
           启用
         </label>
       </Field>
-      <div className="flex items-center justify-end gap-2 pt-1">
+      {/* 底部按钮：窄屏铺满，便于单手点按 */}
+      <div className="flex flex-col-reverse items-stretch gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

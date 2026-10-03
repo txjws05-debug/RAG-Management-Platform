@@ -74,14 +74,14 @@ function TreeCheckbox({
   return (
     <div>
       <div
-        className="flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-slate-50"
+        className="flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-subtle"
         style={{ paddingLeft: depth * 16 + 4 }}
       >
         {node.children.length > 0 ? (
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="w-4 shrink-0 text-xs text-slate-400 hover:text-slate-600"
+            className="w-4 shrink-0 text-xs text-faint hover:text-body touch-target"
             aria-label={open ? '折叠' : '展开'}
           >
             {open ? '▾' : '▸'}
@@ -92,16 +92,16 @@ function TreeCheckbox({
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            className="h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-200"
+            className="h-4 w-4 cursor-pointer rounded border-line-strong text-brand focus:ring-2 focus:ring-brand/30 touch-target"
             checked={checked}
             ref={(el) => {
               if (el) el.indeterminate = indeterminate
             }}
             onChange={(e) => toggle(e.target.checked)}
           />
-          <span className="truncate text-sm text-slate-700">{node.name}</span>
-          <span className="shrink-0 text-xs text-slate-400">{node.code}</span>
-          <span className="shrink-0 text-xs text-slate-400">（{node.user_count} 人）</span>
+          <span className="truncate text-sm text-body">{node.name}</span>
+          <span className="shrink-0 text-xs text-faint">{node.code}</span>
+          <span className="shrink-0 text-xs text-faint">（{node.user_count} 人）</span>
           {!node.enabled ? (
             <Badge tone="slate" className="shrink-0">
               已停用
@@ -234,7 +234,7 @@ export default function GrantDialog({
       onClose={onClose}
       footer={
         <>
-          <span className="mr-auto text-xs text-slate-500">
+          <span className="mr-auto text-xs text-muted">
             已选择 {totalSelected} 项授权实体
           </span>
           <Button onClick={onClose} disabled={saving}>
@@ -256,54 +256,56 @@ export default function GrantDialog({
         </InfoNote>
 
         {loading ? (
-          <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-6 text-sm text-muted">
             <Spinner /> 正在加载组织架构与已有权限…
           </div>
         ) : null}
 
         {/* 全局公开 */}
-        <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3">
-          <label className="flex cursor-pointer items-start gap-3">
+        <div className="rounded-lg border border-line bg-subtle/60 px-4 py-3">
+          <label className="flex cursor-pointer items-start gap-3 touch-target">
             <Checkbox
               checked={globalPublic}
               onChange={(e) => setGlobalPublic(e.target.checked)}
               className="mt-0.5"
             />
             <span>
-              <span className="block text-sm font-medium text-slate-800">
+              <span className="block text-sm font-medium text-strong">
                 全局公开（所有登录用户可见）
               </span>
-              <span className="mt-0.5 block text-xs text-slate-500">
+              <span className="mt-0.5 block text-xs text-muted">
                 打开后该知识单元对所有已登录账号开放检索，不受部门/角色/人员限制。
               </span>
             </span>
           </label>
         </div>
 
+        {/* 手机上单列堆叠：两个 max-h-64 的滚动框并排会把 375px 挤成两条窄缝 */}
         <div
           className={cn(
-            'grid gap-4 md:grid-cols-2',
+            'grid grid-cols-1 gap-4 sm:grid-cols-2',
             globalPublic && 'pointer-events-none opacity-60',
           )}
         >
           {/* 部门 */}
-          <div className="rounded-lg border border-slate-200">
-            <header className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-              <h4 className="text-sm font-semibold text-slate-700">
-                按部门 <span className="text-xs font-normal text-slate-400">可多选（含子部门）</span>
+          <div className="rounded-lg border border-line">
+            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
+              <h4 className="text-sm font-semibold text-body">
+                按部门 <span className="text-xs font-normal text-faint">可多选（含子部门）</span>
               </h4>
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-400">已选 {deptIds.size}</span>
+                <span className="text-faint">已选 {deptIds.size}</span>
                 <button
                   type="button"
-                  className="text-indigo-600 hover:underline"
+                  className="text-brand-ink hover:underline touch-target"
                   onClick={() => setDeptIds(new Set())}
                 >
                   清空
                 </button>
               </div>
             </header>
-            <div className="max-h-64 overflow-y-auto px-2 py-2">
+            {/* 部门树靠 paddingLeft 表达层级，深层节点会超出容器，用横向滚动兜底 */}
+            <div className="max-h-64 overflow-x-auto overflow-y-auto px-2 py-2">
               {tree && tree.length > 0 ? (
                 tree.map((node) => (
                   <TreeCheckbox
@@ -315,20 +317,20 @@ export default function GrantDialog({
                   />
                 ))
               ) : (
-                <p className="px-2 py-3 text-xs text-slate-400">暂无部门数据</p>
+                <p className="px-2 py-3 text-xs text-faint">暂无部门数据</p>
               )}
             </div>
           </div>
 
           {/* 角色 */}
-          <div className="rounded-lg border border-slate-200">
-            <header className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
-              <h4 className="text-sm font-semibold text-slate-700">按角色</h4>
+          <div className="rounded-lg border border-line">
+            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
+              <h4 className="text-sm font-semibold text-body">按角色</h4>
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-400">已选 {roleIds.size}</span>
+                <span className="text-faint">已选 {roleIds.size}</span>
                 <button
                   type="button"
-                  className="text-indigo-600 hover:underline"
+                  className="text-brand-ink hover:underline touch-target"
                   onClick={() => setRoleIds(new Set())}
                 >
                   清空
@@ -339,18 +341,18 @@ export default function GrantDialog({
               {(roles ?? []).map((role) => (
                 <label
                   key={role.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-slate-50"
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-subtle"
                 >
                   <Checkbox
                     checked={roleIds.has(role.id)}
                     onChange={(e) => setRoleIds((prev) => toggleIn(prev, role.id, e.target.checked))}
                   />
-                  <span className="text-sm text-slate-700">{role.name}</span>
-                  <span className="text-xs text-slate-400">{role.code}</span>
+                  <span className="text-sm text-body">{role.name}</span>
+                  <span className="text-xs text-faint">{role.code}</span>
                 </label>
               ))}
               {!rolesLoading && (roles ?? []).length === 0 ? (
-                <p className="px-1 py-3 text-xs text-slate-400">暂无角色数据</p>
+                <p className="px-1 py-3 text-xs text-faint">暂无角色数据</p>
               ) : null}
             </div>
           </div>
@@ -358,45 +360,46 @@ export default function GrantDialog({
 
         {/* 人员 */}
         <div
-          className={cn('rounded-lg border border-slate-200', globalPublic && 'pointer-events-none opacity-60')}
+          className={cn('rounded-lg border border-line', globalPublic && 'pointer-events-none opacity-60')}
         >
-          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
-            <h4 className="text-sm font-semibold text-slate-700">按人员</h4>
-            <div className="flex items-center gap-2">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
+            <h4 className="text-sm font-semibold text-body">按人员</h4>
+            {/* 窄屏让搜索框独占一行（w-full），宽屏才收窄到 w-56 */}
+            <div className="flex flex-wrap items-center gap-2">
               <Input
                 value={userKeyword}
                 onChange={(e) => setUserKeyword(e.target.value)}
                 placeholder="搜索用户名 / 姓名 / 部门"
-                className="h-8 w-56 text-xs"
+                className="h-9 w-full text-xs sm:h-8 sm:w-56"
               />
-              <span className="text-xs text-slate-400">已选 {userIds.size}</span>
+              <span className="text-xs text-faint">已选 {userIds.size}</span>
               <button
                 type="button"
-                className="text-xs text-indigo-600 hover:underline"
+                className="text-xs text-brand-ink hover:underline touch-target"
                 onClick={() => setUserIds(new Set())}
               >
                 清空
               </button>
             </div>
           </header>
-          <div className="grid max-h-64 gap-0.5 overflow-y-auto px-3 py-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid max-h-64 grid-cols-1 gap-0.5 overflow-y-auto px-3 py-2 sm:grid-cols-2 lg:grid-cols-3">
             {filteredUsers.map((u) => (
               <label
                 key={u.id}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-slate-50"
+                className="flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-1 py-1 hover:bg-subtle"
               >
                 <Checkbox
                   checked={userIds.has(u.id)}
                   onChange={(e) => setUserIds((prev) => toggleIn(prev, u.id, e.target.checked))}
                 />
-                <span className="truncate text-sm text-slate-700">{u.display_name}</span>
-                <span className="shrink-0 text-xs text-slate-400">
+                <span className="min-w-0 truncate text-sm text-body">{u.display_name}</span>
+                <span className="shrink-0 text-xs text-faint">
                   {u.department?.name ?? '未分配'}
                 </span>
               </label>
             ))}
             {!usersLoading && filteredUsers.length === 0 ? (
-              <p className="px-1 py-3 text-xs text-slate-400">没有匹配的人员</p>
+              <p className="px-1 py-3 text-xs text-faint">没有匹配的人员</p>
             ) : null}
           </div>
         </div>

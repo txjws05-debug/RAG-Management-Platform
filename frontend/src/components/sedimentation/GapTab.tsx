@@ -116,7 +116,7 @@ export default function GapTab({ can }: GapTabProps) {
         }
       >
         {isLoading && !data ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
             <Spinner /> 正在加载知识缺口…
           </div>
         ) : null}
@@ -134,13 +134,14 @@ export default function GapTab({ can }: GapTabProps) {
             <TableWrap minWidthClass="min-w-[1040px]">
               <thead>
                 <tr>
-                  <Th>未命中提问</Th>
-                  <Th className="w-[130px]">提问部门</Th>
+                  {/* 手机上只留「提问 / 频次 / 状态 / 操作」，其余列 md 起才出现 */}
+                  <Th className="min-w-[200px]">未命中提问</Th>
+                  <Th className="hidden w-[130px] md:table-cell">提问部门</Th>
                   <Th className="w-[80px]">频次</Th>
-                  <Th className="w-[110px]">最高相似度</Th>
-                  <Th className="w-[130px]">建议分类</Th>
+                  <Th className="hidden w-[110px] md:table-cell">最高相似度</Th>
+                  <Th className="hidden w-[130px] md:table-cell">建议分类</Th>
                   <Th className="w-[110px]">状态</Th>
-                  <Th className="w-[140px]">最近出现</Th>
+                  <Th className="hidden w-[140px] md:table-cell">最近出现</Th>
                   <Th className="w-[190px]">操作</Th>
                 </tr>
               </thead>
@@ -148,25 +149,27 @@ export default function GapTab({ can }: GapTabProps) {
                 {(data?.items ?? []).map((gap) => {
                   const meta = STATUS_META[gap.status] ?? { label: gap.status, tone: 'slate' as const }
                   return (
-                    <tr key={gap.id} className="align-top hover:bg-slate-50/70">
-                      <Td className="max-w-[320px]">
-                        <p className="font-medium text-slate-800">{gap.question_text}</p>
+                    <tr key={gap.id} className="align-top hover:bg-subtle/70">
+                      <Td className="min-w-0 max-w-[320px]">
+                        <p className="font-medium break-words text-strong">{gap.question_text}</p>
                         {gap.task_note ? (
-                          <p className="mt-1 rounded-md bg-indigo-50/70 px-2 py-1 text-xs leading-relaxed text-indigo-700">
+                          <p className="mt-1 rounded-md bg-brand-soft/70 px-2 py-1 text-xs leading-relaxed break-words text-brand-ink">
                             任务说明：{gap.task_note}
                           </p>
                         ) : null}
                       </Td>
-                      <Td className="text-xs text-slate-600">{gap.department_name ?? '未知部门'}</Td>
-                      <Td className="text-xs text-slate-600">
-                        <span className="font-semibold text-slate-800">{formatNumber(gap.frequency)}</span> 次
+                      <Td className="hidden text-xs text-body md:table-cell">
+                        {gap.department_name ?? '未知部门'}
                       </Td>
-                      <Td>
+                      <Td className="text-xs text-body">
+                        <span className="font-semibold text-strong">{formatNumber(gap.frequency)}</span> 次
+                      </Td>
+                      <Td className="hidden md:table-cell">
                         <div className="flex items-center gap-2">
                           <Badge tone={similarityTone(gap.max_similarity)}>
                             {gap.max_similarity.toFixed(2)}
                           </Badge>
-                          <div className="h-1.5 w-12 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-1.5 w-12 overflow-hidden rounded-full bg-subtle">
                             <div
                               className={cn(
                                 'h-full rounded-full',
@@ -183,14 +186,18 @@ export default function GapTab({ can }: GapTabProps) {
                           </div>
                         </div>
                       </Td>
-                      <Td className="text-xs text-slate-600">{gap.suggested_category || '未建议'}</Td>
+                      <Td className="hidden text-xs text-body md:table-cell">
+                        {gap.suggested_category || '未建议'}
+                      </Td>
                       <Td>
                         <Badge tone={meta.tone}>{meta.label}</Badge>
                       </Td>
-                      <Td className="text-xs text-slate-500">{formatDateTime(gap.last_seen_at)}</Td>
+                      <Td className="hidden text-xs text-muted md:table-cell">
+                        {formatDateTime(gap.last_seen_at)}
+                      </Td>
                       <Td>
                         {canManage ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1">
                             <Button
                               size="sm"
                               variant="secondary"
@@ -208,7 +215,7 @@ export default function GapTab({ can }: GapTabProps) {
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">只读</span>
+                          <span className="text-xs text-faint">只读</span>
                         )}
                       </Td>
                     </tr>
@@ -296,8 +303,8 @@ function GapTaskForm({
   return (
     <div className="space-y-3">
       {error ? <ErrorNote>{error}</ErrorNote> : null}
-      <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2.5">
-        <p className="text-sm font-medium text-slate-800">{gap.question_text}</p>
+      <div className="rounded-lg border border-line bg-subtle/70 px-3 py-2.5">
+        <p className="text-sm font-medium break-words text-strong">{gap.question_text}</p>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           <Badge tone="slate">部门 {gap.department_name ?? '未知'}</Badge>
           <Badge tone="indigo">频次 {gap.frequency}</Badge>
@@ -318,7 +325,8 @@ function GapTaskForm({
           placeholder="例如：售后服务"
         />
       </Field>
-      <div className="flex items-center justify-end gap-2 pt-1">
+      {/* 底部按钮换行 + 触屏 44px 可点区 */}
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

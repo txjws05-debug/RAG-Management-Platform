@@ -3,6 +3,9 @@
 /**
  * 登录页：用户名 / 密码登录。
  * 登录成功后把 access_token 写入 localStorage（key = kb_token）并跳转 /dashboard。
+ *
+ * 移动端要点：卡片窄屏铺满并收紧内边距；输入框与主按钮统一 h-11（触屏 44px 目标），
+ * 输入框字号用 text-base —— iOS Safari 在字号小于 16px 时聚焦会自动放大整页。
  */
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -59,10 +62,11 @@ export default function LoginPage() {
   if (user) return <FullPageLoading text="已登录，正在进入控制台…" />;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-10">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[1.05fr_1fr]">
-        {/* 品牌介绍区 */}
-        <section className="hidden flex-col justify-between bg-indigo-600 p-8 text-indigo-50 lg:flex">
+    // 窄屏去掉外层大内边距，让卡片用满可视宽度，避免手机上压迫内容区
+    <main className="flex min-h-screen items-center justify-center bg-canvas px-3 py-6 sm:px-6 sm:py-10">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-line bg-canvas shadow-sm lg:grid-cols-[1.05fr_1fr]">
+        {/* 品牌介绍区：仅宽屏展示，窄屏完全隐藏以保证表单首屏可见 */}
+        <section className="hidden flex-col justify-between bg-brand p-8 text-indigo-50 lg:flex">
           <div>
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
@@ -90,49 +94,59 @@ export default function LoginPage() {
         </section>
 
         {/* 登录表单区 */}
-        <section className="p-8">
-          <h1 className="text-lg font-semibold text-slate-800">账号登录</h1>
-          <p className="mt-1 text-xs text-slate-500">请使用管理员分配的账号登录控制台</p>
+        <section className="w-full px-5 py-6 sm:px-8 sm:py-8">
+          <h1 className="text-lg font-semibold text-strong">账号登录</h1>
+          <p className="mt-1 text-xs text-muted">请使用管理员分配的账号登录控制台</p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-600">用户名</span>
+              <span className="text-xs font-medium text-body">用户名</span>
               <Input
                 name="username"
                 value={username}
                 autoComplete="username"
                 autoFocus
                 placeholder="请输入用户名"
+                // text-base（16px）+ h-11：既满足触屏点击目标，也避开 iOS 聚焦缩放
+                className="h-11 text-base"
                 onChange={(event) => setUsername(event.target.value)}
               />
             </label>
 
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-600">密码</span>
+              <span className="text-xs font-medium text-body">密码</span>
               <Input
                 name="password"
                 type="password"
                 value={password}
                 autoComplete="current-password"
                 placeholder="请输入密码"
+                className="h-11 text-base"
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
 
             {error ? <ErrorNote>{error}</ErrorNote> : null}
 
-            <Button type="submit" variant="primary" size="lg" loading={submitting} className="w-full">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={submitting}
+              className="h-11 w-full touch-target"
+            >
               {submitting ? '登录中…' : '登录'}
             </Button>
           </form>
 
           {/* 演示账号提示 */}
-          <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-              <Icon name="sparkles" className="h-3.5 w-3.5 text-indigo-500" />
+          <div className="mt-6 rounded-lg border border-line bg-subtle p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-body">
+              <Icon name="sparkles" className="h-3.5 w-3.5 text-brand-ink" />
               演示账号（点击可自动填充）
             </p>
-            <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {/* 窄屏单列、宽屏两列：账号名较长时单列可避免横向溢出 */}
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {DEMO_ACCOUNTS.map((account) => (
                 <button
                   key={account.username}
@@ -142,14 +156,14 @@ export default function LoginPage() {
                     setPassword(account.password);
                     setError('');
                   }}
-                  className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left text-[11px] transition-colors hover:border-indigo-200 hover:bg-indigo-50/50"
+                  className="flex items-center justify-between gap-2 rounded-md border border-line bg-canvas px-2 py-1.5 text-left text-[11px] transition-colors hover:border-brand-ink/30 hover:bg-brand-soft/50"
                 >
-                  <span className="font-mono text-slate-700">{account.username}</span>
-                  <span className="text-slate-400">{account.role}</span>
+                  <span className="truncate font-mono text-body">{account.username}</span>
+                  <span className="shrink-0 text-faint">{account.role}</span>
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+            <p className="mt-2 text-[11px] leading-relaxed text-faint">
               演示账号密码见上表；超级管理员 admin 的初始密码由后端环境变量
               BOOTSTRAP_ADMIN_PASSWORD 决定。
             </p>

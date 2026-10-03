@@ -79,6 +79,12 @@ class UserProfile(BaseModel):
     department: DepartmentBrief | None = None
     roles: list[RoleBrief] = Field(default_factory=list)
     permissions: list[str] = Field(default_factory=list)
+    # 界面主题偏好：system | light | dark（存服务端以跨设备保持一致）
+    theme_preference: str = "system"
+
+
+class ThemePreferenceUpdate(BaseModel):
+    theme_preference: str = Field(pattern="^(system|light|dark)$")
 
 
 class DepartmentNode(BaseModel):
@@ -169,6 +175,7 @@ class UserRow(BaseModel):
     roles: list[RoleBrief] = Field(default_factory=list)
     enabled: bool = True
     is_superuser: bool = False
+    theme_preference: str = "system"
     created_at: str | None = None
 
 

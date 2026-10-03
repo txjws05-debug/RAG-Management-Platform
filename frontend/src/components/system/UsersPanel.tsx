@@ -97,7 +97,7 @@ export default function UsersPanel({ can }: UsersPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {noticeNode}
 
       <Card
@@ -105,7 +105,8 @@ export default function UsersPanel({ can }: UsersPanelProps) {
         description="账号需分配部门与角色；角色决定功能权限，部门决定知识单元的数据权限"
         bodyClassName="space-y-3"
         actions={
-          <>
+          // 窄屏筛选控件纵向铺满：控件多且含下拉，横排会被压到无法操作
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <Input
               value={keyword}
               onChange={(e) => {
@@ -113,7 +114,7 @@ export default function UsersPanel({ can }: UsersPanelProps) {
                 setPage(1)
               }}
               placeholder="搜索用户名或姓名"
-              className="h-8 w-48 text-xs"
+              className="h-9 w-full text-sm sm:h-8 sm:w-48 sm:text-xs"
             />
             <Select
               value={departmentId}
@@ -121,7 +122,7 @@ export default function UsersPanel({ can }: UsersPanelProps) {
                 setDepartmentId(e.target.value)
                 setPage(1)
               }}
-              className="h-8 text-xs"
+              className="h-9 w-full text-sm sm:h-8 sm:w-auto sm:text-xs"
             >
               <option value="">全部部门</option>
               {deptOptions.map(({ node, depth }) => (
@@ -135,6 +136,7 @@ export default function UsersPanel({ can }: UsersPanelProps) {
               <Button
                 size="sm"
                 variant="primary"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setEditing(null)
                   setFormOpen(true)
@@ -143,11 +145,11 @@ export default function UsersPanel({ can }: UsersPanelProps) {
                 新增用户
               </Button>
             ) : null}
-          </>
+          </div>
         }
       >
         {isLoading && !data ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
             <Spinner /> 正在加载用户…
           </div>
         ) : null}
@@ -159,47 +161,50 @@ export default function UsersPanel({ can }: UsersPanelProps) {
 
         {(data?.items ?? []).length > 0 ? (
           <>
-            <TableWrap minWidthClass="min-w-[980px]">
+            {/* TableWrap 自带 overflow-x-auto；表格保持 min-w，由外层横向滚动兜住窄屏 */}
+            <TableWrap minWidthClass="min-w-[720px] sm:min-w-[980px]">
               <thead>
                 <tr>
-                  <Th className="w-[90px]">ID</Th>
-                  <Th>账号</Th>
-                  <Th className="w-[150px]">姓名</Th>
-                  <Th className="w-[150px]">所属部门</Th>
-                  <Th>角色</Th>
-                  <Th className="w-[90px]">状态</Th>
-                  <Th className="w-[140px]">创建时间</Th>
-                  <Th className="w-[140px]">操作</Th>
+                  <Th className="w-[70px] px-2 py-2 sm:w-[90px] sm:px-3 sm:py-2.5">ID</Th>
+                  <Th className="px-2 py-2 sm:px-3 sm:py-2.5">账号</Th>
+                  <Th className="w-[120px] px-2 py-2 sm:w-[150px] sm:px-3 sm:py-2.5">姓名</Th>
+                  <Th className="w-[130px] px-2 py-2 sm:w-[150px] sm:px-3 sm:py-2.5">所属部门</Th>
+                  <Th className="px-2 py-2 sm:px-3 sm:py-2.5">角色</Th>
+                  <Th className="w-[80px] px-2 py-2 sm:w-[90px] sm:px-3 sm:py-2.5">状态</Th>
+                  <Th className="w-[130px] px-2 py-2 sm:w-[140px] sm:px-3 sm:py-2.5">创建时间</Th>
+                  <Th className="w-[130px] px-2 py-2 sm:w-[140px] sm:px-3 sm:py-2.5">操作</Th>
                 </tr>
               </thead>
               <tbody>
                 {(data?.items ?? []).map((u) => {
                   const isSelf = currentUser?.id === u.id
                   return (
-                    <tr key={u.id} className={cn('hover:bg-slate-50/70', !u.enabled && 'opacity-60')}>
-                      <Td className="text-xs text-slate-500">{u.id}</Td>
-                      <Td>
+                    <tr key={u.id} className={cn('hover:bg-subtle/70', !u.enabled && 'opacity-60')}>
+                      <Td className="px-2 py-2 text-xs text-muted sm:px-3 sm:py-2.5">{u.id}</Td>
+                      <Td className="px-2 py-2 sm:px-3 sm:py-2.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-slate-800">{u.username}</span>
+                          <span className="font-medium text-strong">{u.username}</span>
                           {u.is_superuser ? <Badge tone="violet">超级管理员</Badge> : null}
                           {isSelf ? <Badge tone="sky">当前账号</Badge> : null}
                         </div>
                         {u.email ? (
-                          <p className="mt-0.5 text-xs text-slate-400">{u.email}</p>
+                          <p className="mt-0.5 text-xs text-faint">{u.email}</p>
                         ) : null}
                       </Td>
-                      <Td className="text-sm text-slate-700">{u.display_name}</Td>
-                      <Td className="text-xs text-slate-600">
+                      <Td className="px-2 py-2 text-sm text-body sm:px-3 sm:py-2.5">
+                        {u.display_name}
+                      </Td>
+                      <Td className="px-2 py-2 text-xs text-body sm:px-3 sm:py-2.5">
                         {u.department ? (
                           <>
                             {u.department.name}
-                            <span className="ml-1 text-slate-400">{u.department.code}</span>
+                            <span className="ml-1 text-faint">{u.department.code}</span>
                           </>
                         ) : (
-                          <span className="text-slate-400">未分配</span>
+                          <span className="text-faint">未分配</span>
                         )}
                       </Td>
-                      <Td>
+                      <Td className="px-2 py-2 sm:px-3 sm:py-2.5">
                         <div className="flex flex-wrap gap-1">
                           {u.roles.length > 0 ? (
                             u.roles.map((r) => (
@@ -208,19 +213,22 @@ export default function UsersPanel({ can }: UsersPanelProps) {
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-xs text-slate-400">无角色</span>
+                            <span className="text-xs text-faint">无角色</span>
                           )}
                         </div>
                       </Td>
-                      <Td>
+                      <Td className="px-2 py-2 sm:px-3 sm:py-2.5">
                         <Badge tone={u.enabled ? 'emerald' : 'rose'}>
                           {u.enabled ? '正常' : '已禁用'}
                         </Badge>
                       </Td>
-                      <Td className="text-xs text-slate-500">{formatDateTime(u.created_at)}</Td>
-                      <Td>
+                      <Td className="px-2 py-2 text-xs text-muted sm:px-3 sm:py-2.5">
+                        {formatDateTime(u.created_at)}
+                      </Td>
+                      <Td className="px-2 py-2 sm:px-3 sm:py-2.5">
                         {canManage ? (
-                          <div className="flex flex-wrap items-center gap-1.5">
+                          // 操作列按钮较多，窄屏折行排列而不是把列撑宽
+                          <div className="flex flex-wrap items-center gap-1">
                             <Button
                               size="sm"
                               onClick={() => {
@@ -247,7 +255,7 @@ export default function UsersPanel({ can }: UsersPanelProps) {
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-400">只读</span>
+                          <span className="text-xs text-faint">只读</span>
                         )}
                       </Td>
                     </tr>
@@ -293,9 +301,9 @@ export default function UsersPanel({ can }: UsersPanelProps) {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-body">
           确定禁用账号
-          <span className="mx-1 font-medium text-slate-800">「{disableTarget?.username}」</span>
+          <span className="mx-1 font-medium text-strong">「{disableTarget?.username}」</span>
           （{disableTarget?.display_name}）吗？
         </p>
       </Modal>
@@ -475,29 +483,29 @@ function UserForm({
       </div>
 
       <Field label="分配角色" hint={`已选 ${roleIds.length} 个角色`}>
-        <div className="grid max-h-48 gap-1 overflow-y-auto rounded-lg border border-slate-200 p-2 sm:grid-cols-2">
+        <div className="grid max-h-48 gap-1 overflow-y-auto rounded-lg border border-line p-2 sm:grid-cols-2">
           {roles.map((role) => (
             <label
               key={role.id}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 hover:bg-slate-50"
+              className="flex touch-target cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 hover:bg-subtle"
             >
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                className="h-4 w-4 rounded border-line-strong text-indigo-600"
                 checked={roleIds.includes(role.id)}
                 onChange={(e) => toggleRole(role.id, e.target.checked)}
               />
-              <span className="text-sm text-slate-700">{role.name}</span>
-              <span className="text-xs text-slate-400">{role.code}</span>
+              <span className="text-sm text-body">{role.name}</span>
+              <span className="text-xs text-faint">{role.code}</span>
             </label>
           ))}
           {roles.length === 0 ? (
-            <p className="px-1.5 py-2 text-xs text-slate-400">暂无可用角色</p>
+            <p className="px-1.5 py-2 text-xs text-faint">暂无可用角色</p>
           ) : null}
         </div>
       </Field>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:items-center sm:justify-end">
         <Button onClick={onClose} disabled={saving}>
           取消
         </Button>

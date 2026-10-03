@@ -25,10 +25,10 @@ export default function SystemPage() {
   const canManageSystem = can('system:manage')
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <header>
-        <h1 className="text-lg font-semibold text-slate-800">组织架构与系统配置</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-base font-semibold text-strong sm:text-lg">组织架构与系统配置</h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
           维护部门树、用户账号、角色功能权限与底层模型接口参数；部门与角色会直接参与知识单元的四维数据权限判定。
         </p>
       </header>
@@ -39,23 +39,23 @@ export default function SystemPage() {
         </InfoNote>
       ) : null}
 
-      {/* Tab 切换 */}
-      <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-100">
+      {/* Tab 切换：窄屏纵向排列，避免四个带说明的选项卡被挤成细长条 */}
+      <div className="flex flex-col gap-1 rounded-xl border border-line bg-canvas p-1.5 shadow-sm sm:flex-row sm:flex-wrap sm:gap-2">
         {TABS.map((item) => (
           <button
             key={item.key}
             type="button"
             onClick={() => setTab(item.key)}
             className={cn(
-              'flex-1 rounded-lg px-3 py-2 text-left transition-colors',
-              tab === item.key ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50',
+              'flex-1 touch-target rounded-lg px-3 py-2 text-left transition-colors',
+              tab === item.key ? 'bg-brand-soft text-brand-ink' : 'text-body hover:bg-subtle',
             )}
           >
             <span className="block text-sm font-medium">{item.label}</span>
             <span
               className={cn(
                 'mt-0.5 block text-xs',
-                tab === item.key ? 'text-indigo-500' : 'text-slate-400',
+                tab === item.key ? 'text-brand-ink/80' : 'text-faint',
               )}
             >
               {item.description}

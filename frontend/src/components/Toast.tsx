@@ -36,10 +36,11 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+/* 中性/品牌一档走 token；状态色保持固定色对（它们是「深字浅底」的成对语义，暗色下仍成立）。 */
 const TONE_STYLES: Record<ToastTone, string> = {
   success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   error: 'border-rose-200 bg-rose-50 text-rose-800',
-  info: 'border-indigo-100 bg-indigo-50 text-indigo-800',
+  info: 'border-brand-ink/30 bg-brand-soft text-brand-ink',
   warning: 'border-amber-200 bg-amber-50 text-amber-800',
 };
 
@@ -98,7 +99,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed top-4 right-4 z-[100] flex w-80 flex-col gap-2">
+      {/* 手机上留出左右各 1rem，避免固定 320px 宽在 375px 屏上贴边甚至溢出 */}
+      <div className="pointer-events-none fixed top-4 right-4 left-4 z-[100] flex flex-col gap-2 sm:left-auto sm:w-80">
         {items.map((item) => (
           <div
             key={item.id}
@@ -114,7 +116,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => remove(item.id)}
               aria-label="关闭提示"
-              className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100"
+              className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100 touch-target"
             >
               <Icon name="close" className="h-3 w-3" />
             </button>

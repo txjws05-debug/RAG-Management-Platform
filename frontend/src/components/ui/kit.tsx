@@ -60,22 +60,30 @@ export function useDebounced<T>(value: T, delay = 350): T {
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline'
 type ButtonSize = 'sm' | 'md'
 
+/* 主按钮的 indigo/white 是固定色对：暗色下若把 indigo 调亮就会变成浅蓝底白字，
+   所以品牌填充色刻意不参与主题化，只有中性色走 token。 */
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent disabled:bg-indigo-300',
+    'bg-brand text-white hover:bg-brand-dark border border-transparent disabled:bg-brand/50',
   secondary:
-    'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-60',
+    'bg-brand-soft text-brand-ink hover:bg-raised border border-brand-ink/30 disabled:opacity-60',
   outline:
-    'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 disabled:opacity-60',
-  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 border border-transparent',
+    'bg-canvas text-body hover:bg-subtle border border-line disabled:opacity-60',
+  ghost: 'bg-transparent text-body hover:bg-subtle border border-transparent',
   danger:
-    'bg-white text-rose-600 hover:bg-rose-50 border border-rose-200 disabled:opacity-60',
+    'bg-canvas text-rose-600 hover:bg-rose-50 border border-rose-200 disabled:opacity-60',
 }
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-2.5 text-xs gap-1',
   md: 'h-9 px-3.5 text-sm gap-1.5',
 }
+
+/**
+ * 可点击元素的共用类：触屏下把可点区抬到 44px（见 globals.css 的 @media (hover: none)），
+ * 桌面鼠标环境不受影响，因此可以直接内联进每个交互件。
+ */
+const TOUCH = 'touch-target'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -99,8 +107,9 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center rounded-lg font-medium transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
         'disabled:cursor-not-allowed',
+        TOUCH,
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,
@@ -130,12 +139,13 @@ export function Spinner({ className }: { className?: string }) {
 /* ------------------------------------------------------------------ */
 
 const FIELD_BASE =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 ' +
-  'placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 ' +
-  'disabled:bg-slate-50 disabled:text-slate-400'
+  'w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-strong ' +
+  'placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 ' +
+  'disabled:bg-subtle disabled:text-faint'
 
 export function Input({ className, ...rest }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...rest} className={cn(FIELD_BASE, 'h-9', className)} />
+  // h-10 sm:h-9：手机上 40px 才够手指点，桌面上维持原来紧凑的 36px
+  return <input {...rest} className={cn(FIELD_BASE, 'h-10 sm:h-9', className)} />
 }
 
 export function TextArea({ className, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -144,7 +154,7 @@ export function TextArea({ className, ...rest }: React.TextareaHTMLAttributes<HT
 
 export function Select({ className, children, ...rest }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select {...rest} className={cn(FIELD_BASE, 'h-9 pr-8', className)}>
+    <select {...rest} className={cn(FIELD_BASE, 'h-10 pr-8 sm:h-9', className)}>
       {children}
     </select>
   )
@@ -165,12 +175,13 @@ export function Field({
 }) {
   return (
     <label className={cn('block space-y-1.5', className)}>
-      <span className="flex items-center gap-1 text-xs font-medium text-slate-600">
+      {/* 标签允许换行：长中文标签在 375px 上不该被 whitespace-nowrap 顶出容器 */}
+      <span className="flex flex-wrap items-center gap-1 text-xs font-medium text-body">
         {label}
         {required ? <span className="text-rose-500">*</span> : null}
       </span>
       {children}
-      {hint ? <span className="block text-xs text-slate-400">{hint}</span> : null}
+      {hint ? <span className="block text-xs text-faint">{hint}</span> : null}
     </label>
   )
 }
@@ -184,8 +195,9 @@ export function Checkbox({
       type="checkbox"
       {...rest}
       className={cn(
-        'h-4 w-4 cursor-pointer rounded border-slate-300 text-indigo-600',
-        'focus:ring-2 focus:ring-indigo-200',
+        'h-4 w-4 cursor-pointer rounded border-line-strong text-brand',
+        'focus:ring-2 focus:ring-brand/30',
+        TOUCH,
         className,
       )}
     />
@@ -211,11 +223,13 @@ export function Switch({
       onClick={() => onChange(!checked)}
       className={cn(
         'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
+        TOUCH,
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-        checked ? 'bg-indigo-600' : 'bg-slate-300',
+        checked ? 'bg-brand' : 'bg-raised',
       )}
     >
+      {/* 开关滑块是「画在固定色上的图形」，与 bg-white 的语义无关，故保留白色 */}
       <span
         className={cn(
           'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
@@ -248,16 +262,16 @@ export function Card({
   return (
     <section
       className={cn(
-        'rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-100',
+        'rounded-xl border border-line bg-canvas shadow-sm shadow-line',
         className,
       )}
     >
       {title || actions ? (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-slate-800">{title}</h2>
+            <h2 className="truncate text-sm font-semibold text-strong">{title}</h2>
             {description ? (
-              <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+              <p className="mt-0.5 text-xs text-muted">{description}</p>
             ) : null}
           </div>
           {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -277,9 +291,11 @@ export type BadgeTone =
   | 'sky'
   | 'violet'
 
+/* 状态色（emerald/amber/rose/sky/violet）是固定色对，暗色下深浅关系依然成立，故整体保留。
+   只有 slate 这一档本质是中性色，改用 token 以便跟随主题。 */
 const BADGE_TONES: Record<BadgeTone, string> = {
-  slate: 'bg-slate-100 text-slate-600 border-slate-200',
-  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  slate: 'bg-subtle text-body border-line',
+  indigo: 'bg-brand-soft text-brand-ink border-brand-ink/30',
   emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   amber: 'bg-amber-50 text-amber-700 border-amber-100',
   rose: 'bg-rose-50 text-rose-700 border-rose-100',
@@ -323,13 +339,13 @@ export function ProgressBar({
 }) {
   const pct = Math.max(0, Math.min(100, Math.round(value)))
   const tones: Record<string, string> = {
-    indigo: 'bg-indigo-500',
+    indigo: 'bg-brand',
     emerald: 'bg-emerald-500',
     rose: 'bg-rose-500',
     amber: 'bg-amber-500',
   }
   return (
-    <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-slate-100', className)}>
+    <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-subtle', className)}>
       <div
         className={cn('h-full rounded-full transition-all duration-300', tones[tone])}
         style={{ width: `${pct}%` }}
@@ -348,9 +364,9 @@ export function EmptyState({
   action?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center">
-      <p className="text-sm font-medium text-slate-600">{title}</p>
-      {description ? <p className="text-xs text-slate-400">{description}</p> : null}
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-subtle/60 px-4 py-10 text-center">
+      <p className="text-sm font-medium text-body">{title}</p>
+      {description ? <p className="text-xs text-faint">{description}</p> : null}
       {action}
     </div>
   )
@@ -367,7 +383,7 @@ export function ErrorNote({ children }: { children: React.ReactNode }) {
 
 export function InfoNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-relaxed text-indigo-700">
+    <div className="rounded-lg border border-brand-ink/30 bg-brand-soft/70 px-3 py-2 text-xs leading-relaxed text-brand-ink">
       {children}
     </div>
   )
@@ -395,10 +411,10 @@ export function Pagination({
   const to = Math.min(total, page * pageSize)
   return (
     <div className={cn('flex flex-wrap items-center justify-between gap-3 pt-3', className)}>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         共 {total} 条，当前 {from}-{to} 条 · 第 {page}/{totalPages} 页
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
           上一页
         </Button>
@@ -445,32 +461,40 @@ export function Modal({
   useEscape(open, onClose)
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 sm:p-8">
+    /* 手机上贴底弹出的抽屉（items-end + 无外边距），桌面恢复居中卡片（sm:items-center + sm:p-4）。
+       高度一律用 dvh：移动浏览器地址栏收起/展开会改变可视高度，vh 会算大并裁掉底部按钮。 */
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4">
       <div
         className={cn(
-          'my-auto w-full rounded-xl border border-slate-200 bg-white shadow-xl',
+          'flex max-h-[92dvh] w-full flex-col border border-line bg-canvas shadow-xl',
+          'rounded-t-2xl sm:max-h-[85dvh] sm:rounded-2xl',
           widthClass,
         )}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-3.5">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-4 py-3.5 sm:px-5">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+            <h3 className="text-sm font-semibold text-strong">{title}</h3>
             {description ? (
-              <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+              <p className="mt-0.5 text-xs text-muted">{description}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭"
-            className="rounded-md px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className={cn(
+              '-mr-1 shrink-0 rounded-md px-2 py-1 text-lg leading-none text-muted',
+              'hover:bg-subtle hover:text-body',
+              TOUCH,
+            )}
           >
             ×
           </button>
         </header>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+        {/* 头部/底部固定，只有内容区滚动；这样底部按钮在手机上始终可见 */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
         {footer ? (
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-5 py-3">
+          <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-4 py-3 pb-safe sm:px-5">
             {footer}
           </footer>
         ) : null}
@@ -499,32 +523,39 @@ export function Drawer({
   useEscape(open, onClose)
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40">
+    /* 与 Modal 统一：手机上是全屏宽度的底部抽屉，桌面是居中卡片。
+       原先的「右侧固定侧栏」在 375px 上只能靠横向滚动，因此不再沿用右对齐布局。 */
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4">
       <aside
         className={cn(
-          'flex h-full w-full flex-col border-l border-slate-200 bg-white shadow-2xl',
+          'flex max-h-[92dvh] w-full flex-col border border-line bg-canvas shadow-2xl',
+          'rounded-t-2xl sm:max-h-[85dvh] sm:rounded-2xl',
           widthClass,
         )}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-3.5">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-4 py-3.5 sm:px-5">
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-800">{title}</h3>
+            <h3 className="truncate text-sm font-semibold text-strong">{title}</h3>
             {description ? (
-              <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+              <p className="mt-0.5 text-xs text-muted">{description}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="关闭"
-            className="rounded-md px-2 py-1 text-lg leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className={cn(
+              '-mr-1 shrink-0 rounded-md px-2 py-1 text-lg leading-none text-muted',
+              'hover:bg-subtle hover:text-body',
+              TOUCH,
+            )}
           >
             ×
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
         {footer ? (
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-5 py-3">
+          <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-4 py-3 pb-safe sm:px-5">
             {footer}
           </footer>
         ) : null}
@@ -545,7 +576,7 @@ export interface Notice {
 const NOTICE_TONES: Record<Notice['tone'], string> = {
   success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   error: 'border-rose-200 bg-rose-50 text-rose-700',
-  info: 'border-indigo-100 bg-indigo-50 text-indigo-700',
+  info: 'border-brand-ink/30 bg-brand-soft text-brand-ink',
 }
 
 /** 一次性提示：setNotice({tone,text})，4 秒后自动消失。 */
@@ -595,6 +626,8 @@ export function TableWrap({
   minWidthClass?: string
 }) {
   return (
+    /* 窄屏靠横向滚动兜底，而不是让单元格把整页撑破。
+       min-width 只作用在 table 上（配合外层 overflow-x-auto），不会给页面制造横向滚动。 */
     <div className="overflow-x-auto">
       <table className={cn('w-full border-collapse text-sm', minWidthClass)}>{children}</table>
     </div>
@@ -611,7 +644,8 @@ export function Th({
   return (
     <th
       className={cn(
-        'border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap text-slate-500',
+        // 表头不设 whitespace-nowrap：中文表头在窄屏允许折行，比强行撑宽表格更好
+        'border-b border-line bg-subtle/80 px-2 py-2 text-left text-xs font-semibold text-muted sm:px-3 sm:py-2.5',
         className,
       )}
     >
@@ -628,7 +662,12 @@ export function Td({
   className?: string
 }) {
   return (
-    <td className={cn('border-b border-slate-100 px-3 py-2.5 align-middle text-slate-700', className)}>
+    <td
+      className={cn(
+        'border-b border-line px-2 py-2 align-middle text-body sm:px-3 sm:py-2.5',
+        className,
+      )}
+    >
       {children}
     </td>
   )

@@ -407,7 +407,7 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
       onClose={onClose}
       footer={
         <>
-          <span className="mr-auto text-xs text-slate-500">
+          <span className="mr-auto text-xs text-muted">
             待上传 {stats.queued} · 处理中 {stats.running} · 完成 {stats.done} · 失败 {stats.failed}
           </span>
           <Button onClick={onClose} disabled={uploading}>
@@ -423,7 +423,8 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
         {noticeNode}
         {error ? <ErrorNote>{error}</ErrorNote> : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/* 手机上单列：两个并排的表单字段在 375px 上会各自窄到看不清已选值 */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="归属分类" hint="批量导入的文档统一归入该分类">
             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="未分类">未分类</option>
@@ -443,8 +444,8 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
           </Field>
         </div>
 
-        <div className="text-xs text-slate-500">
-          实际入库分类：<span className="font-medium text-indigo-600">{effectiveCategory}</span>
+        <div className="text-xs text-muted">
+          实际入库分类：<span className="font-medium text-brand-ink">{effectiveCategory}</span>
         </div>
 
         {/* 拖拽区 */}
@@ -456,14 +457,15 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors',
-            dragging ? 'border-indigo-400 bg-indigo-50/70' : 'border-slate-200 bg-slate-50/60',
+            // 窄屏收紧内边距与纵向留白，给下面的队列腾出可视高度
+            'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors sm:px-6 sm:py-8',
+            dragging ? 'border-brand bg-brand-soft/70' : 'border-line bg-subtle/60',
           )}
         >
-          <p className="text-sm font-medium text-slate-700">
-            把文件或<strong className="text-indigo-600">整个文件夹</strong>拖到这里
+          <p className="text-sm font-medium text-body">
+            把文件或<strong className="text-brand-ink">整个文件夹</strong>拖到这里
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs break-words text-faint">
             支持 {SUPPORTED_EXT.map((e) => `.${e}`).join(' / ')}，单文件不超过 50MB；文件夹会自动递归读取
           </p>
           <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
@@ -496,8 +498,8 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
 
         {/* 队列 */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-700">待上传队列 / 上传状态</h4>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-body">待上传队列 / 上传状态</h4>
             {items.length > 0 ? (
               <Button
                 size="sm"
@@ -521,21 +523,22 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
                 return (
                   <li
                     key={it.key}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2.5"
+                    className="rounded-lg border border-line bg-canvas px-3 py-2.5"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
+                      {/* min-w-0 是让文件名 truncate 生效的前提，否则长路径会把整行顶出抽屉 */}
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
                         {it.status === 'uploading' || it.status === 'parsing' ? (
-                          <Spinner className="h-3.5 w-3.5 text-indigo-500" />
+                          <Spinner className="h-3.5 w-3.5 text-brand" />
                         ) : null}
-                        <span className="truncate text-sm text-slate-700" title={it.name}>
+                        <span className="min-w-0 truncate text-sm text-body" title={it.name}>
                           {it.name}
                         </span>
-                        <span className="shrink-0 text-xs text-slate-400">
+                        <span className="shrink-0 text-xs text-faint">
                           {formatFileSize(it.size)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {it.status === 'ready' ? (
                           <Badge tone="emerald">已就绪 · {it.chunkCount ?? 0} 切片</Badge>
                         ) : (
@@ -544,7 +547,7 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
                         {it.status === 'queued' ? (
                           <button
                             type="button"
-                            className="text-xs text-slate-400 hover:text-rose-500"
+                            className="text-xs text-faint hover:text-rose-500 touch-target"
                             onClick={() => setItems((prev) => prev.filter((p) => p.key !== it.key))}
                           >
                             移除
@@ -568,8 +571,8 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
                     {it.message ? (
                       <p
                         className={cn(
-                          'mt-1.5 text-xs',
-                          it.status === 'failed' ? 'text-rose-600' : 'text-slate-500',
+                          'mt-1.5 text-xs break-words',
+                          it.status === 'failed' ? 'text-rose-600' : 'text-muted',
                         )}
                       >
                         {it.message}

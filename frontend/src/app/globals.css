@@ -1,18 +1,92 @@
 @import "tailwindcss";
 
 /* ==================================================================
-   Tailwind v4 CSS-first 主题配置
-   （不生成 tailwind.config.js，主题变量写在这里）
+   暗色模式变体：由 <html data-theme="light|dark"> 驱动，而非媒体查询。
+
+   Tailwind 默认的 `dark:` 变体直接询问浏览器（prefers-color-scheme），
+   应用自己存储的偏好无法覆盖它。把属性设为唯一真相来源后，
+   系统设置与用户的显式选择走同一条路径，组件无需关心最终是谁胜出。
+   root layout 中的 ThemeScript 会在首帧绘制前设定该属性，因此不会闪屏。
+   ================================================================== */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ==================================================================
+   语义化颜色（设计规范核心）
+
+   组件引用的是「角色」（text-body、bg-canvas），而不是「色阶」（text-slate-700）——
+   因为一个在白底上读起来正确的色阶，放到近黑底上通常是错的。
+   下面每个 token 在暗色下都被重新定义，因此按这些 token 写的组件
+   完全不需要写任何 `dark:` 变体。
+
+   固定色 —— 品牌填充色、状态色 —— 刻意不重新定义：
+   `bg-indigo-600 text-white` 是一对搭档，若为暗色主题把 indigo 调亮，
+   就会变成浅蓝底配白字，主按钮直接不可读。
+   凡是固定色在暗色表面上确实会失败的地方，由组件自己用 `dark:` 变体说明，
+   这样那些少数刻意的例外是可见的，而不是被藏进色阶里。
+
+   映射约定（迁移自旧代码的 slate 刻度，保证亮色外观基本不变）：
+     slate-50  → canvas        页面与卡片背景
+     slate-100 → subtle        内陷面板、表头
+     slate-200 → line          边框与分隔线
+     slate-300 → line-strong   控件边框、悬停分隔线
+     slate-400 → faint         占位符、禁用态、图标
+     slate-500 → muted         次要文字
+     slate-600 → body          正文
+     slate-700 → body
+     slate-800 → strong        标题与主要文字
+     slate-900 → strong
    ================================================================== */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
+
+  /* 品牌与固定角色 */
+  --color-brand: #4f46e5;         /* indigo-600 品牌主色 */
+  --color-brand-dark: #4338ca;    /* indigo-700 悬停态 */
+  --color-brand-soft: #eef2ff;    /* indigo-50  品牌浅底（与 brand-ink 成对） */
+  --color-brand-ink: #4338ca;     /* indigo-700 该底色上的文字与图标 */
+
+  /* 中性角色：亮色值对齐 Tailwind 默认调色板，
+     因此把 bg-slate-50 换成 bg-canvas 不会改变亮色观感 —— token 存在的意义
+     正是让同一个类能表达两种含义。 */
+  --color-canvas: #ffffff;         /* 页面与卡片背景 */
+  --color-subtle: #f8fafc;         /* 内陷面板、表头 */
+  --color-muted-surface: #f1f5f9;  /* 芯片、惰性控件 */
+  --color-raised: #e2e8f0;         /* 选中态、填充态 */
+  --color-strong: #0f172a;         /* 标题与主要文字 */
+  --color-body: #334155;           /* 正文 */
+  --color-muted: #64748b;          /* 次要文字 */
+  --color-faint: #94a3b8;          /* 占位符、禁用态、图标 */
+  --color-line: #e2e8f0;           /* 边框与分隔线 */
+  --color-line-strong: #cbd5e1;    /* 控件边框、悬停分隔线 */
+}
+
+/* 暗色主题：中性角色整体移到近黑画布与浅色字。 */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-canvas: #111827;
+  --color-subtle: #0b1220;
+  --color-muted-surface: #1f2937;
+  --color-raised: #374151;
+  --color-strong: #f9fafb;
+  --color-body: #d1d5db;
+  --color-muted: #9ca3af;
+  --color-faint: #6b7280;
+  --color-line: #374151;
+  --color-line-strong: #4b5563;
+
+  /* 品牌浅底是一个「表面角色」而非固定搭档：bg-brand-soft text-brand-ink
+     是芯片、选中菜单项、图标块。因此两半必须一起移动，
+     否则会在中间相遇 —— 浅色底配浅色字，这正是只主题化其中一半的后果。 */
+  --color-brand-soft: #312e81;  /* indigo-900 */
+  --color-brand-ink: #c7d2fe;   /* indigo-200 */
 }
 
 /* ==================================================================
-   全局基础样式：浅色企业后台，衬底 slate-50
+   全局基础
    ================================================================== */
 html {
   -webkit-text-size-adjust: 100%;
@@ -21,22 +95,24 @@ html {
 
 body {
   margin: 0;
-  background-color: var(--color-slate-50, #f8fafc);
-  color: var(--color-slate-800, #1e293b);
+  background-color: var(--color-subtle);
+  color: var(--color-strong);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 控制台最小支持宽度 1280px：窄于此宽度出现横向滚动，而不是把布局挤坏 */
-.console-shell {
-  min-width: 1280px;
-}
+/*
+ * 注意：这里曾经有一条 `.console-shell { min-width: 1280px }`。
+ * 它让窄屏出现横向滚动而不是把布局挤坏 —— 代价是手机端完全不可用。
+ * 现已移除：控制台改为响应式外壳（桌面固定侧栏 / 移动端抽屉 + 遮罩），
+ * 见 src/app/(console)/layout.tsx。
+ */
 
 /* 细滚动条，避免侧栏与消息区间距被系统滚动条撑开 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
@@ -46,19 +122,21 @@ body {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background-color: var(--color-line-strong);
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: var(--color-faint);
 }
 
 ::selection {
-  background-color: #c7d2fe;
-  color: #1e1b4b;
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand-ink);
 }
 
-/* 流式输出光标（打字机效果） */
+/* ==================================================================
+   流式输出光标（打字机效果）
+   ================================================================== */
 @keyframes kb-caret-blink {
   0%,
   100% {
@@ -81,11 +159,12 @@ body {
 
 /* ==================================================================
    Markdown 正文样式（自写，未引入 typography 插件）
+   全部使用语义 token，因此暗色下自动正确
    ================================================================== */
 .markdown-body {
   font-size: 0.875rem;
   line-height: 1.75;
-  color: var(--color-slate-700, #334155);
+  color: var(--color-body);
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -105,7 +184,7 @@ body {
   margin: 1rem 0 0.5rem;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--color-slate-800, #1e293b);
+  color: var(--color-strong);
 }
 .markdown-body h1 {
   font-size: 1.25rem;
@@ -139,25 +218,25 @@ body {
 }
 .markdown-body strong {
   font-weight: 600;
-  color: var(--color-slate-900, #0f172a);
+  color: var(--color-strong);
 }
 .markdown-body a {
-  color: var(--color-indigo-600, #4f46e5);
+  color: var(--color-brand);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .markdown-body blockquote {
   margin: 0.75rem 0;
   padding: 0.5rem 0.75rem;
-  border-left: 3px solid var(--color-indigo-200, #c7d2fe);
+  border-left: 3px solid var(--color-brand-ink);
   border-radius: 0 0.375rem 0.375rem 0;
-  background-color: rgb(238 242 255 / 0.6);
-  color: var(--color-slate-600, #475569);
+  background-color: var(--color-brand-soft);
+  color: var(--color-body);
 }
 .markdown-body hr {
   margin: 1rem 0;
   border: 0;
-  border-top: 1px solid var(--color-slate-200, #e2e8f0);
+  border-top: 1px solid var(--color-line);
 }
 .markdown-body img {
   max-width: 100%;
@@ -170,10 +249,10 @@ body {
 /* 行内代码（排除代码块内的 code） */
 .markdown-body :not(pre) > code {
   padding: 0.1rem 0.3rem;
-  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border: 1px solid var(--color-line);
   border-radius: 0.25rem;
-  background-color: var(--color-slate-100, #f1f5f9);
-  color: var(--color-indigo-700, #4338ca);
+  background-color: var(--color-muted-surface);
+  color: var(--color-brand-ink);
 }
 .markdown-body pre {
   margin: 0;
@@ -187,6 +266,11 @@ body {
   font-size: 0.75rem;
   line-height: 1.6;
 }
+/* 表格：窄屏允许横向滚动，而不是把容器撑破 */
+.markdown-body .table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .markdown-body table {
   width: 100%;
   margin: 0.75rem 0;
@@ -196,18 +280,19 @@ body {
 .markdown-body th,
 .markdown-body td {
   padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border: 1px solid var(--color-line);
   text-align: left;
 }
 .markdown-body th {
-  background-color: var(--color-slate-50, #f8fafc);
+  background-color: var(--color-subtle);
   font-weight: 600;
-  color: var(--color-slate-600, #475569);
+  color: var(--color-muted);
 }
 
 /* ==================================================================
-   highlight.js 代码高亮主题（GitHub Light，手写以免额外 import 依赖）
-   供 rehype-highlight 生成的 .hljs-* 类使用
+   highlight.js 代码高亮
+   亮色用 GitHub Light，暗色用 GitHub Dark —— 两者通过 [data-theme] 切换，
+   因此代码块在暗色下不会出现"近白底 + 近白字"。
    ================================================================== */
 .hljs {
   display: block;
@@ -286,4 +371,93 @@ body {
 }
 .hljs-strong {
   font-weight: 700;
+}
+
+[data-theme="dark"] .hljs {
+  color: #c9d1d9;
+}
+[data-theme="dark"] .hljs-comment,
+[data-theme="dark"] .hljs-quote {
+  color: #8b949e;
+}
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag,
+[data-theme="dark"] .hljs-subst {
+  color: #ff7b72;
+}
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal,
+[data-theme="dark"] .hljs-variable,
+[data-theme="dark"] .hljs-template-variable,
+[data-theme="dark"] .hljs-tag .hljs-attr {
+  color: #79c0ff;
+}
+[data-theme="dark"] .hljs-string,
+[data-theme="dark"] .hljs-doctag {
+  color: #a5d6ff;
+}
+[data-theme="dark"] .hljs-title,
+[data-theme="dark"] .hljs-section,
+[data-theme="dark"] .hljs-selector-id,
+[data-theme="dark"] .hljs-title.class_,
+[data-theme="dark"] .hljs-title.function_ {
+  color: #d2a8ff;
+}
+[data-theme="dark"] .hljs-type,
+[data-theme="dark"] .hljs-class .hljs-title {
+  color: #d2a8ff;
+}
+[data-theme="dark"] .hljs-attr,
+[data-theme="dark"] .hljs-attribute,
+[data-theme="dark"] .hljs-built_in,
+[data-theme="dark"] .hljs-builtin-name,
+[data-theme="dark"] .hljs-selector-attr,
+[data-theme="dark"] .hljs-selector-pseudo {
+  color: #ffa657;
+}
+[data-theme="dark"] .hljs-symbol,
+[data-theme="dark"] .hljs-bullet,
+[data-theme="dark"] .hljs-link,
+[data-theme="dark"] .hljs-meta {
+  color: #ffa657;
+}
+[data-theme="dark"] .hljs-meta .hljs-keyword,
+[data-theme="dark"] .hljs-meta .hljs-string {
+  color: #a5d6ff;
+}
+[data-theme="dark"] .hljs-name,
+[data-theme="dark"] .hljs-tag {
+  color: #7ee787;
+}
+[data-theme="dark"] .hljs-regexp {
+  color: #a5d6ff;
+}
+[data-theme="dark"] .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
+[data-theme="dark"] .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}
+
+/* ==================================================================
+   移动端适配：安全区域（iPhone 刘海 / 底部横条）
+   抽屉与底部固定元素需要避让，否则在全面屏上会被遮挡。
+   ================================================================== */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+}
+
+/* 触屏设备上保证点击目标不小于 44px 可点区 */
+@media (hover: none) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

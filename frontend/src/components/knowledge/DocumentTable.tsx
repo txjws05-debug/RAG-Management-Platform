@@ -64,7 +64,7 @@ export default function DocumentTable({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
+      <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted">
         <Spinner /> 正在加载知识台账…
       </div>
     )
@@ -92,17 +92,20 @@ export default function DocumentTable({
       <TableWrap minWidthClass="min-w-[1080px]">
         <thead>
           <tr>
+            {/* 手机上只保留「看得懂 + 能操作」的四列：编号、标题、状态、操作；
+                其余列用 hidden md:table-cell 收起，避免 375px 下必须横向拖很远才能点到按钮。
+                外层 min-width 仍保留，桌面端列宽与原来一致。 */}
             <Th className="w-[92px]">编号</Th>
-            <Th>标题</Th>
-            <Th className="w-[70px]">格式</Th>
-            <Th className="w-[110px]">分类</Th>
+            <Th className="min-w-[200px]">标题</Th>
+            <Th className="hidden w-[70px] md:table-cell">格式</Th>
+            <Th className="hidden w-[110px] md:table-cell">分类</Th>
             <Th className="w-[90px]">解析状态</Th>
-            <Th className="w-[220px]">数据权限</Th>
-            <Th className="w-[90px]">切片数</Th>
-            <Th className="w-[88px]">大小</Th>
-            <Th className="w-[140px]">更新时间</Th>
-            <Th className="w-[80px]">启用</Th>
-            <Th className="w-[280px]">操作</Th>
+            <Th className="hidden w-[220px] md:table-cell">数据权限</Th>
+            <Th className="hidden w-[90px] md:table-cell">切片数</Th>
+            <Th className="hidden w-[88px] md:table-cell">大小</Th>
+            <Th className="hidden w-[140px] md:table-cell">更新时间</Th>
+            <Th className="hidden w-[80px] md:table-cell">启用</Th>
+            <Th className="w-[240px]">操作</Th>
           </tr>
         </thead>
         <tbody>
@@ -111,11 +114,12 @@ export default function DocumentTable({
             const statusMeta = STATUS_META[doc.status] ?? { label: doc.status, tone: 'slate' as const }
             const noGrant = !doc.grant_summary || doc.grant_summary.includes('无任何权限')
             return (
-              <tr key={doc.id} className={cn('hover:bg-slate-50/70', !doc.enabled && 'opacity-60')}>
-                <Td className="font-mono text-xs text-slate-500">{doc.code}</Td>
-                <Td>
-                  <div className="max-w-[320px]">
-                    <p className="truncate font-medium text-slate-800" title={doc.title}>
+              <tr key={doc.id} className={cn('hover:bg-subtle/70', !doc.enabled && 'opacity-60')}>
+                <Td className="font-mono text-xs text-muted">{doc.code}</Td>
+                {/* min-w-0 让 truncate 真正生效：否则格子会跟着长标题一起变宽 */}
+                <Td className="min-w-0">
+                  <div className="min-w-0 max-w-[320px]">
+                    <p className="truncate font-medium text-strong" title={doc.title}>
                       {doc.title}
                     </p>
                     {doc.status === 'failed' && doc.error_message ? (
@@ -123,37 +127,43 @@ export default function DocumentTable({
                         {doc.error_message}
                       </p>
                     ) : (
-                      <p className="mt-0.5 text-xs text-slate-400">
+                      <p className="mt-0.5 truncate text-xs text-faint">
                         {formatNumber(doc.char_count)} 字 · 创建于 {formatDateTime(doc.created_at)}
                       </p>
                     )}
                   </div>
                 </Td>
-                <Td>
+                <Td className="hidden md:table-cell">
                   <Badge tone="sky">{doc.file_type.toUpperCase()}</Badge>
                 </Td>
-                <Td className="text-xs text-slate-600">{doc.category || '未分类'}</Td>
+                <Td className="hidden text-xs text-body md:table-cell">{doc.category || '未分类'}</Td>
                 <Td>
                   <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
                 </Td>
-                <Td>
+                <Td className="hidden md:table-cell">
                   {noGrant ? (
                     <Badge tone="rose" title="仅管理员可见，请配置数据权限">
                       无权限（仅管理员）
                     </Badge>
                   ) : (
                     <span
-                      className="line-clamp-2 block text-xs leading-relaxed text-slate-600"
+                      className="line-clamp-2 block text-xs leading-relaxed text-body"
                       title={doc.grant_summary}
                     >
                       {doc.grant_summary}
                     </span>
                   )}
                 </Td>
-                <Td className="text-xs text-slate-600">{formatNumber(doc.chunk_count)}</Td>
-                <Td className="text-xs text-slate-500">{formatFileSize(doc.file_size)}</Td>
-                <Td className="text-xs text-slate-500">{formatDateTime(doc.updated_at)}</Td>
-                <Td>
+                <Td className="hidden text-xs text-body md:table-cell">
+                  {formatNumber(doc.chunk_count)}
+                </Td>
+                <Td className="hidden text-xs text-muted md:table-cell">
+                  {formatFileSize(doc.file_size)}
+                </Td>
+                <Td className="hidden text-xs text-muted md:table-cell">
+                  {formatDateTime(doc.updated_at)}
+                </Td>
+                <Td className="hidden md:table-cell">
                   {canManage ? (
                     <Switch
                       checked={doc.enabled}
@@ -168,7 +178,8 @@ export default function DocumentTable({
                   )}
                 </Td>
                 <Td>
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  {/* 手机窄列里按钮自动换行，避免四个按钮把这一列撑成超宽 */}
+                  <div className="flex flex-wrap items-center gap-1">
                     <Button size="sm" onClick={() => onViewChunks(doc)}>
                       查看切片
                     </Button>

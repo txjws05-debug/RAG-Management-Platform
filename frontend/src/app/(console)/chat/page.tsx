@@ -154,7 +154,8 @@ function MessageBubble({ message }: { message: UiMessage }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[76%] rounded-xl rounded-tr-sm bg-indigo-600 px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-white shadow-sm">
+        {/* 窄屏用满整行宽度，避免被 76% 的限宽挤成细长条 */}
+        <div className="max-w-full rounded-xl rounded-tr-sm bg-brand px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap text-white shadow-sm sm:max-w-[76%]">
           {message.content}
         </div>
       </div>
@@ -169,11 +170,11 @@ function MessageBubble({ message }: { message: UiMessage }) {
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[92%] min-w-0 rounded-xl rounded-tl-sm border border-slate-200 bg-white px-3.5 py-3 shadow-sm">
+      <div className="max-w-full min-w-0 rounded-xl rounded-tl-sm border border-line bg-canvas px-3 py-3 shadow-sm sm:max-w-[92%] sm:px-3.5">
         {/* 头部：来源 + 复制 */}
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            <span className="flex h-5 w-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
+          <div className="flex items-center gap-1.5 text-[11px] text-faint">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-soft text-brand-ink">
               <Icon name="sparkles" className="h-3 w-3" />
             </span>
             <span>AI 助手</span>
@@ -182,7 +183,7 @@ function MessageBubble({ message }: { message: UiMessage }) {
             <button
               type="button"
               onClick={copyAnswer}
-              className="inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-0.5 text-[11px] text-slate-500 hover:text-indigo-600"
+              className="inline-flex touch-target items-center gap-1 rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:text-brand-ink"
             >
               <Icon name={copied ? 'check' : 'copy'} className="h-3 w-3" />
               {copied ? '已复制' : '复制回答'}
@@ -204,8 +205,8 @@ function MessageBubble({ message }: { message: UiMessage }) {
         {message.content ? (
           <Markdown content={message.content} className={message.streaming ? 'kb-caret' : undefined} />
         ) : message.streaming ? (
-          <p className="flex items-center gap-2 py-1 text-xs text-slate-500">
-            <Spinner className="h-3.5 w-3.5 text-indigo-500" />
+          <p className="flex items-center gap-2 py-1 text-xs text-muted">
+            <Spinner className="h-3.5 w-3.5 text-brand-ink" />
             正在检索知识库并生成回答…
           </p>
         ) : null}
@@ -215,9 +216,9 @@ function MessageBubble({ message }: { message: UiMessage }) {
         {/* 引用溯源 */}
         {message.citations.length > 0 ? <Citations citations={message.citations} /> : null}
 
-        {/* 本轮统计 */}
+        {/* 本轮统计：允许换行，窄屏下耗时 / Token / 召回数会折成多行而不溢出 */}
         {hasMeta || message.answerSource ? (
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-2 text-[11px] text-faint">
             <SourceBadge source={message.answerSource} />
             {message.latencyMs !== undefined ? (
               <span className="inline-flex items-center gap-1">
@@ -266,6 +267,8 @@ function ChatWorkbench() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConversationRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // 历史会话侧栏在窄屏（<lg）改为抽屉：默认收起，由对话区顶栏的按钮唤出
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -428,6 +431,8 @@ function ChatWorkbench() {
     setSessionKey(null);
     setMessages([]);
     setInput('');
+    // 移动端新建会话后收起抽屉，直接回到对话区
+    setSidebarOpen(false);
   };
 
   const openConversation = async (key: string) => {
@@ -470,17 +475,48 @@ function ChatWorkbench() {
   const conversationList = conversations.data ?? [];
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] min-h-[560px] gap-4">
+    // 窄屏给够最小高度便于连续阅读；lg 以上按视口高度固定，做成分栏工作台。
+    // 用 dvh 而非 vh：移动浏览器地址栏伸缩时 vh 会算错，导致底部输入区被裁掉。
+    <div className="flex min-h-[70dvh] flex-col gap-3 lg:h-[calc(100dvh-9rem)] lg:min-h-[560px] lg:flex-row lg:gap-4">
+      {/* 窄屏抽屉遮罩：点击空白处收起会话列表 */}
+      {sidebarOpen ? (
+        <button
+          type="button"
+          aria-label="收起历史会话"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+        />
+      ) : null}
+
       {/* ---------------- 历史会话侧栏 ---------------- */}
-      <aside className="flex w-[268px] shrink-0 flex-col rounded-xl border border-slate-200 bg-white">
-        <header className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <Icon name="history" className="h-3.5 w-3.5 text-indigo-500" />
+      {/* lg 以上常驻固定侧栏；lg 以下默认隐藏，展开时以抽屉 + 遮罩浮出 */}
+      <aside
+        className={cn(
+          'flex w-full shrink-0 flex-col rounded-xl border border-line bg-canvas lg:flex lg:w-[268px]',
+          sidebarOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] rounded-none border-y-0 border-l-0 shadow-xl lg:static lg:z-auto lg:max-w-none lg:rounded-xl lg:border lg:shadow-none'
+            : 'hidden',
+        )}
+      >
+        <header className="flex items-center justify-between gap-2 border-b border-line px-3 py-2.5">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-body">
+            <Icon name="history" className="h-3.5 w-3.5 text-brand-ink" />
             历史会话
           </span>
-          <Button size="sm" variant="secondary" icon="plus" onClick={startNewConversation}>
-            新会话
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="secondary" icon="plus" onClick={startNewConversation}>
+              新会话
+            </Button>
+            {/* 抽屉里的关闭按钮：仅窄屏出现 */}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="收起历史会话"
+              className="touch-target rounded-lg p-1 text-muted hover:bg-subtle hover:text-body lg:hidden"
+            >
+              <Icon name="close" className="h-4 w-4" />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-2">
@@ -500,34 +536,39 @@ function ChatWorkbench() {
                       className={cn(
                         'group flex items-start gap-2 rounded-lg border px-2.5 py-2 transition-colors',
                         active
-                          ? 'border-indigo-200 bg-indigo-50/70'
-                          : 'border-transparent hover:bg-slate-50',
+                          ? 'border-brand-ink/30 bg-brand-soft/70'
+                          : 'border-transparent hover:bg-subtle',
                       )}
                     >
                       <button
                         type="button"
-                        onClick={() => void openConversation(conversation.session_key)}
-                        className="min-w-0 flex-1 text-left"
+                        onClick={() => {
+                          void openConversation(conversation.session_key);
+                          // 手机上选中会话后立即收起抽屉，把屏幕让给对话内容
+                          setSidebarOpen(false);
+                        }}
+                        className="min-w-0 flex-1 touch-target text-left"
                       >
                         <p
                           className={cn(
                             'truncate text-xs font-medium',
-                            active ? 'text-indigo-700' : 'text-slate-700',
+                            active ? 'text-brand-ink' : 'text-body',
                           )}
                           title={conversation.title}
                         >
                           {conversation.title || '未命名会话'}
                         </p>
-                        <p className="mt-0.5 text-[11px] text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-faint">
                           {conversation.message_count} 条消息 · {formatDateTime(conversation.updated_at)}
                         </p>
                       </button>
+                      {/* 触屏没有 hover，删除按钮改为常显，否则手机上无法删除会话 */}
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(conversation)}
                         title="删除会话"
                         aria-label={`删除会话 ${conversation.title}`}
-                        className="mt-0.5 rounded p-1 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
+                        className="mt-0.5 touch-target rounded p-1 text-faint transition-opacity hover:bg-rose-50 hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <Icon name="trash" className="h-3.5 w-3.5" />
                       </button>
@@ -541,48 +582,62 @@ function ChatWorkbench() {
       </aside>
 
       {/* ---------------- 对话主区 ---------------- */}
-      <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+      <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-line bg-canvas">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2.5 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            {/* 窄屏唤出历史会话抽屉；会话数提示避免用户不知道这里能点 */}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="打开历史会话"
+              className="touch-target -ml-1 flex shrink-0 items-center gap-1 rounded-lg p-1.5 text-muted hover:bg-subtle hover:text-body lg:hidden"
+            >
+              <Icon name="history" className="h-4 w-4" />
+              {conversationList.length > 0 ? (
+                <span className="text-[11px] text-faint">{conversationList.length}</span>
+              ) : null}
+            </button>
+            <span className="hidden h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand-ink sm:flex">
               <Icon name="chat" className="h-4 w-4" />
             </span>
-            <div>
-              <p className="text-xs font-semibold text-slate-800">AI 智能问答工作台</p>
-              <p className="text-[11px] text-slate-400">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold text-strong">AI 智能问答工作台</p>
+              <p className="truncate text-[11px] text-faint">
                 {sessionKey ? `会话 ${sessionKey}` : '新会话（首轮提问后自动创建）'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+          {/* 顶栏元信息：允许换行，窄屏折行而不是横向溢出 */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-faint">
             <span className="inline-flex items-center gap-1">
-              <Icon name="shield" className="h-3.5 w-3.5 text-amber-500" />
+              {/* amber 图标没有配套底色，暗色画布上会发闷，补一个更亮的暗色值 */}
+              <Icon name="shield" className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
               检索结果按部门 / 角色做数据权限鉴权
             </span>
           </div>
         </header>
 
         {/* 消息区 */}
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:space-y-4 sm:px-4 sm:py-4">
           {loadingHistory ? (
             <Loading text="正在加载会话记录…" />
           ) : messages.length === 0 ? (
-            <div className="mx-auto max-w-2xl py-8">
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-5 py-6 text-center">
-                <span className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+            <div className="mx-auto max-w-2xl py-6 sm:py-8">
+              <div className="rounded-xl border border-line bg-subtle/70 px-4 py-6 text-center sm:px-5">
+                <span className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft text-brand-ink">
                   <Icon name="sparkles" className="h-5 w-5" />
                 </span>
-                <p className="text-sm font-semibold text-slate-800">向知识库提问</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                <p className="text-sm font-semibold text-strong">向知识库提问</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
                   回答基于您有权查阅的制度文档生成，并附引用溯源；命中无权内容时会明确提示权限受限，绝不泄露原文。
                 </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <div className="mt-4 flex flex-wrap justify-center gap-1.5">
                   {FALLBACK_SUGGESTIONS.map((item) => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => void handleSend(item)}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600"
+                      className="touch-target rounded-full border border-line bg-canvas px-3 py-1.5 text-xs text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink"
                     >
                       {item}
                     </button>
@@ -595,24 +650,26 @@ function ChatWorkbench() {
           )}
         </div>
 
-        {/* 输入区 */}
-        <div className="border-t border-slate-100 px-4 py-3">
+        {/* 输入区：sticky 贴底 + pb-safe 避让 iPhone 底部横条 */}
+        <div className="sticky bottom-0 shrink-0 border-t border-line bg-canvas px-3 py-3 pb-safe sm:px-4">
           <form onSubmit={handleSubmit}>
-            <div className="rounded-xl border border-slate-200 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100">
+            <div className="rounded-xl border border-line focus-within:border-brand-ink/40 focus-within:ring-2 focus-within:ring-brand-soft">
               <TextArea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={3}
                 placeholder="请输入你的问题，Enter 发送、Shift+Enter 换行"
-                className="min-h-[72px] resize-none border-0 focus:ring-0"
+                // resize-none 防止移动端拖拽手柄破坏布局；min-h 保证触屏可点高度
+                className="min-h-[44px] resize-none border-0 text-base focus:ring-0 sm:text-sm"
                 disabled={sending}
               />
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-3 py-2">
-                <span className="text-[11px] text-slate-400">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2">
+                {/* 提示文案在窄屏隐藏：键盘唤起后底部空间紧张，优先留给按钮 */}
+                <span className="hidden text-[11px] text-faint sm:inline">
                   Enter 发送 · Shift+Enter 换行 · 回答基于授权知识生成
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                   {sending ? (
                     <Button variant="outline" size="sm" icon="stop" onClick={stopGenerating}>
                       停止生成
@@ -636,8 +693,8 @@ function ChatWorkbench() {
           {/* 智能联想提问 */}
           {suggestionList.length > 0 ? (
             <div className="mt-2.5">
-              <p className="mb-1.5 flex items-center gap-1 text-[11px] text-slate-400">
-                <Icon name="sparkles" className="h-3 w-3 text-indigo-400" />
+              <p className="mb-1.5 flex items-center gap-1 text-[11px] text-faint">
+                <Icon name="sparkles" className="h-3 w-3 text-brand-ink" />
                 推荐提问
                 {suggestions.isValidating ? <span>· 正在联想…</span> : null}
               </p>
@@ -648,7 +705,7 @@ function ChatWorkbench() {
                     type="button"
                     disabled={sending}
                     onClick={() => void handleSend(item)}
-                    className="max-w-full truncate rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-200 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="max-w-full touch-target truncate rounded-full border border-line bg-canvas px-2.5 py-1 text-[11px] text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-50"
                     title={item}
                   >
                     {item}
@@ -677,7 +734,7 @@ function ChatWorkbench() {
           </>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-body">
           确认删除会话「{deleteTarget?.title || '未命名会话'}」吗？该会话包含{' '}
           {deleteTarget?.message_count ?? 0} 条消息。
         </p>

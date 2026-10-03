@@ -20,12 +20,13 @@ import type { ModelConfig, PermissionsCatalog } from './types'
 
 function Row({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2 last:border-b-0">
+    // 窄屏改为纵向堆叠：左右分布时长 base_url 这类无空格字符串会把布局撑破
+    <div className="flex flex-col gap-1 border-b border-line py-2 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-600">{label}</p>
-        {hint ? <p className="mt-0.5 text-xs text-slate-400">{hint}</p> : null}
+        <p className="text-xs font-medium text-body">{label}</p>
+        {hint ? <p className="mt-0.5 text-xs text-faint">{hint}</p> : null}
       </div>
-      <div className="shrink-0 text-right text-sm text-slate-800">{value}</div>
+      <div className="min-w-0 text-left text-sm text-strong sm:shrink-0 sm:text-right">{value}</div>
     </div>
   )
 }
@@ -47,21 +48,21 @@ export default function ModelConfigPanel() {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <InfoNote>
         模型接口参数为<strong>只读展示</strong>，来源于服务端环境变量；
         <strong>修改请编辑 .env 后重启服务</strong>。
       </InfoNote>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
+        <div className="flex items-center gap-2 py-8 text-sm text-muted">
           <Spinner /> 正在加载模型配置…
         </div>
       ) : null}
       {error ? <ErrorNote>{errorMessage(error, '模型配置加载失败')}</ErrorNote> : null}
 
       {data ? (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
           <Card
             title="大语言模型（LLM）"
             description="用于生成答案与候选 FAQ 推荐答案"
@@ -75,8 +76,14 @@ export default function ModelConfigPanel() {
             }
             bodyClassName="py-1"
           >
-            <Row label="接口地址 base_url" value={<span className="font-mono text-xs">{data.llm_base_url}</span>} />
-            <Row label="对话模型 chat_model" value={<span className="font-mono text-xs">{data.llm_chat_model}</span>} />
+            <Row
+              label="接口地址 base_url"
+              value={<span className="font-mono text-xs break-all">{data.llm_base_url}</span>}
+            />
+            <Row
+              label="对话模型 chat_model"
+              value={<span className="font-mono text-xs break-all">{data.llm_chat_model}</span>}
+            />
             <Row label="温度 temperature" value={data.llm_temperature.toFixed(2)} />
             <Row label="最大输出 Token" value={formatNumber(data.llm_max_tokens)} />
             <Row
@@ -89,9 +96,12 @@ export default function ModelConfigPanel() {
           <Card title="向量模型（Embedding）" description="用于切片向量化与语义检索" bodyClassName="py-1">
             <Row
               label="接口地址 base_url"
-              value={<span className="font-mono text-xs">{data.embedding_base_url}</span>}
+              value={<span className="font-mono text-xs break-all">{data.embedding_base_url}</span>}
             />
-            <Row label="向量模型" value={<span className="font-mono text-xs">{data.embedding_model}</span>} />
+            <Row
+              label="向量模型"
+              value={<span className="font-mono text-xs break-all">{data.embedding_model}</span>}
+            />
             <Row
               label="向量维度"
               value={formatNumber(data.embedding_dim)}
@@ -146,21 +156,23 @@ export default function ModelConfigPanel() {
           bodyClassName="space-y-3"
         >
           <div>
-            <p className="mb-1.5 text-xs font-medium text-slate-500">菜单级权限</p>
-            <TableWrap minWidthClass="min-w-[520px]">
+            <p className="mb-1.5 text-xs font-medium text-muted">菜单级权限</p>
+            <TableWrap minWidthClass="min-w-[420px] sm:min-w-[520px]">
               <thead>
                 <tr>
-                  <Th className="w-[180px]">菜单编码</Th>
-                  <Th>菜单名称</Th>
-                  <Th className="w-[180px]">所需权限码</Th>
+                  <Th className="w-[140px] px-2 py-2 sm:w-[180px] sm:px-3 sm:py-2.5">菜单编码</Th>
+                  <Th className="px-2 py-2 sm:px-3 sm:py-2.5">菜单名称</Th>
+                  <Th className="w-[140px] px-2 py-2 sm:w-[180px] sm:px-3 sm:py-2.5">所需权限码</Th>
                 </tr>
               </thead>
               <tbody>
                 {catalog.menus.map((menu) => (
                   <tr key={menu.code}>
-                    <Td className="font-mono text-xs text-slate-500">{menu.code}</Td>
-                    <Td className="text-sm text-slate-700">{menu.name}</Td>
-                    <Td>
+                    <Td className="px-2 py-2 font-mono text-xs text-muted sm:px-3 sm:py-2.5">
+                      {menu.code}
+                    </Td>
+                    <Td className="px-2 py-2 text-sm text-body sm:px-3 sm:py-2.5">{menu.name}</Td>
+                    <Td className="px-2 py-2 sm:px-3 sm:py-2.5">
                       <Badge tone="indigo">{menu.permission}</Badge>
                     </Td>
                   </tr>
@@ -169,15 +181,15 @@ export default function ModelConfigPanel() {
             </TableWrap>
           </div>
           <div>
-            <p className="mb-1.5 text-xs font-medium text-slate-500">操作级权限（按钮级鉴权）</p>
+            <p className="mb-1.5 text-xs font-medium text-muted">操作级权限（按钮级鉴权）</p>
             <div className="flex flex-wrap gap-1.5">
               {catalog.operations.map((op) => (
                 <span
                   key={op.code}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-line bg-canvas px-2 py-1 text-xs"
                 >
-                  <span className="font-mono text-slate-500">{op.code}</span>
-                  <span className="text-slate-700">{op.name}</span>
+                  <span className="font-mono text-muted">{op.code}</span>
+                  <span className="text-body">{op.name}</span>
                 </span>
               ))}
             </div>

@@ -241,6 +241,11 @@ export interface UserProfile {
   department: DepartmentBrief | null;
   roles: RoleBrief[];
   permissions: string[];
+  /**
+   * 界面主题偏好，存于服务端以跨设备保持一致。
+   * 前端仍会在 localStorage 缓存一份，因为首帧渲染前拿不到接口数据。
+   */
+  theme_preference?: 'system' | 'light' | 'dark';
 }
 
 export interface LoginResult {
@@ -351,6 +356,16 @@ export const authApi = {
   },
   me(): Promise<UserProfile> {
     return request<UserProfile>('/auth/me');
+  },
+  /**
+   * 保存界面偏好（当前只有主题）。
+   * 与 localStorage 双写：本地那份保证首帧不闪烁，服务端这份保证换设备后仍在。
+   */
+  savePreferences(themePreference: 'system' | 'light' | 'dark'): Promise<{ theme_preference: string }> {
+    return request<{ theme_preference: string }>('/auth/preferences', {
+      method: 'PUT',
+      body: { theme_preference: themePreference },
+    });
   },
   logout(): Promise<{ message: string }> {
     return request<{ message: string }>('/auth/logout', { method: 'POST' });
