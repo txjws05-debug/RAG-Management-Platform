@@ -183,7 +183,7 @@ function MessageBubble({ message }: { message: UiMessage }) {
             <button
               type="button"
               onClick={copyAnswer}
-              className="inline-flex touch-target items-center gap-1 rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:text-brand-ink"
+              className="inline-flex min-h-11 sm:min-h-0 items-center gap-1 rounded border border-line px-1.5 py-0.5 text-[11px] text-muted hover:text-brand-ink"
             >
               <Icon name={copied ? 'check' : 'copy'} className="h-3 w-3" />
               {copied ? '已复制' : '复制回答'}
@@ -512,7 +512,7 @@ function ChatWorkbench() {
               type="button"
               onClick={() => setSidebarOpen(false)}
               aria-label="收起历史会话"
-              className="touch-target rounded-lg p-1 text-muted hover:bg-subtle hover:text-body lg:hidden"
+              className="min-h-11 sm:min-h-0 rounded-lg p-1 text-muted hover:bg-subtle hover:text-body lg:hidden"
             >
               <Icon name="close" className="h-4 w-4" />
             </button>
@@ -547,7 +547,7 @@ function ChatWorkbench() {
                           // 手机上选中会话后立即收起抽屉，把屏幕让给对话内容
                           setSidebarOpen(false);
                         }}
-                        className="min-w-0 flex-1 touch-target text-left"
+                        className="min-w-0 flex-1 min-h-11 sm:min-h-0 text-left"
                       >
                         <p
                           className={cn(
@@ -568,7 +568,7 @@ function ChatWorkbench() {
                         onClick={() => setDeleteTarget(conversation)}
                         title="删除会话"
                         aria-label={`删除会话 ${conversation.title}`}
-                        className="mt-0.5 touch-target rounded p-1 text-faint transition-opacity hover:bg-rose-50 hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
+                        className="mt-0.5 min-h-11 sm:min-h-0 rounded p-1 text-faint transition-opacity hover:bg-rose-50 hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <Icon name="trash" className="h-3.5 w-3.5" />
                       </button>
@@ -590,7 +590,7 @@ function ChatWorkbench() {
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="打开历史会话"
-              className="touch-target -ml-1 flex shrink-0 items-center gap-1 rounded-lg p-1.5 text-muted hover:bg-subtle hover:text-body lg:hidden"
+              className="-ml-1 flex h-11 shrink-0 items-center gap-1 rounded-lg px-3 text-muted hover:bg-subtle hover:text-body sm:h-auto sm:p-1.5 lg:hidden"
             >
               <Icon name="history" className="h-4 w-4" />
               {conversationList.length > 0 ? (
@@ -637,7 +637,7 @@ function ChatWorkbench() {
                       key={item}
                       type="button"
                       onClick={() => void handleSend(item)}
-                      className="touch-target rounded-full border border-line bg-canvas px-3 py-1.5 text-xs text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink"
+                      className="rounded-full border border-line bg-canvas px-3.5 py-2.5 text-xs leading-5 text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink"
                     >
                       {item}
                     </button>
@@ -658,7 +658,7 @@ function ChatWorkbench() {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleKeyDown}
-                rows={3}
+                rows={2}
                 placeholder="请输入你的问题，Enter 发送、Shift+Enter 换行"
                 // resize-none 防止移动端拖拽手柄破坏布局；min-h 保证触屏可点高度
                 className="min-h-[44px] resize-none border-0 text-base focus:ring-0 sm:text-sm"
@@ -698,14 +698,20 @@ function ChatWorkbench() {
                 推荐提问
                 {suggestions.isValidating ? <span>· 正在联想…</span> : null}
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              {/*
+                手机上这排 chip 必须限制高度并横向滚动。
+                原因是实测出来的：12 条推荐在 375px 下换行堆叠会把整个输入区撑到 589px
+                （视口的 72%），消息区只剩 391px，而且 sticky 的输入区会盖住消息。
+                横向单行滚动让输入区高度稳定在约 1 行 chip，桌面上再恢复自然换行。
+              */}
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                 {suggestionList.map((item) => (
                   <button
                     key={item}
                     type="button"
                     disabled={sending}
                     onClick={() => void handleSend(item)}
-                    className="max-w-full touch-target truncate rounded-full border border-line bg-canvas px-2.5 py-1 text-[11px] text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    className="max-w-[85%] shrink-0 truncate rounded-full border border-line bg-canvas px-3 py-2.5 text-[11px] leading-5 text-body transition-colors hover:border-brand-ink/30 hover:text-brand-ink disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-full sm:shrink sm:py-1.5"
                     title={item}
                   >
                     {item}

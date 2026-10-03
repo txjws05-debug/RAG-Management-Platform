@@ -274,7 +274,7 @@ function PermissionTreeItem({
       {/* 缩进步长做成响应式：窄屏每级更小，深层权限点不会被挤出可视区 */}
       <div
         className={cn(
-          'flex touch-target items-center gap-1.5 rounded-md py-1 pr-1 hover:bg-subtle',
+          'flex min-h-11 sm:min-h-0 items-center gap-1.5 rounded-md py-1 pr-1 hover:bg-subtle',
           depth === 0 ? 'pl-1' : depth === 1 ? 'pl-3 sm:pl-5' : 'pl-5 sm:pl-8',
         )}
       >
@@ -282,7 +282,7 @@ function PermissionTreeItem({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex h-6 w-6 shrink-0 touch-target items-center justify-center text-xs text-faint hover:text-body"
+            className="flex h-6 w-6 shrink-0 min-h-11 sm:min-h-0 items-center justify-center text-xs text-faint hover:text-body"
             aria-label={open ? '折叠' : '展开'}
           >
             {open ? '▾' : '▸'}

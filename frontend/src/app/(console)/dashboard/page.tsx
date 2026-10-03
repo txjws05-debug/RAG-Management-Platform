@@ -290,7 +290,7 @@ function DashboardContent() {
           <button
             type="button"
             onClick={() => void mutate()}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-lg border border-line bg-canvas px-2.5 text-xs text-body hover:bg-subtle"
+            className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg border border-line bg-canvas px-3 sm:h-7 sm:px-25 text-xs text-body hover:bg-subtle"
           >
             <Icon name="refresh" className="h-3.5 w-3.5" />
             刷新

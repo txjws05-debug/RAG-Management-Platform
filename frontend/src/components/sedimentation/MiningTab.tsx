@@ -383,7 +383,7 @@ function CandidateCard({
           {!open && candidate.sample_questions.length > 3 ? (
             <button
               type="button"
-              className="mt-1 text-xs text-brand-ink hover:underline touch-target"
+              className="mt-1 inline-block py-1 text-xs text-brand-ink hover:underline"
               onClick={() => setOpen(true)}
             >
               展开其余 {candidate.sample_questions.length - 3} 条

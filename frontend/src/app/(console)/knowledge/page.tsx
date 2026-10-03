@@ -276,7 +276,7 @@ export default function KnowledgePage() {
                 setPage(1)
               }}
               className={cn(
-                'touch-target rounded-md border px-2 py-0.5 text-xs',
+                'min-h-11 sm:min-h-0 rounded-md border px-2 py-0.5 text-xs',
                 category === ''
                   ? 'border-brand-ink/30 bg-brand-soft text-brand-ink'
                   : 'border-line bg-canvas text-body hover:bg-subtle',
@@ -293,7 +293,7 @@ export default function KnowledgePage() {
                   setPage(1)
                 }}
                 className={cn(
-                  'touch-target rounded-md border px-2 py-0.5 text-xs',
+                  'min-h-11 sm:min-h-0 rounded-md border px-2 py-0.5 text-xs',
                   category === c.name
                     ? 'border-brand-ink/30 bg-brand-soft text-brand-ink'
                     : 'border-line bg-canvas text-body hover:bg-subtle',
@@ -469,7 +469,7 @@ function EditDocumentForm({
         <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="未分类" />
       </Field>
       <Field label="启用状态" hint="停用后该知识单元不参与检索问答">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-body touch-target">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-body min-h-11 sm:min-h-0">
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-line-strong text-indigo-600"

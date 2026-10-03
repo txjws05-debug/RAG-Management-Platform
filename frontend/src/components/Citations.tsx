@@ -45,7 +45,7 @@ export function CitationCard({ citation, index }: { citation: Citation; index: n
         type="button"
         onClick={() => setPinned((value) => !value)}
         aria-expanded={pinned}
-        className="w-full text-left touch-target"
+        className="w-full text-left min-h-11 sm:min-h-0"
       >
         <div className="flex items-start gap-2">
           <span

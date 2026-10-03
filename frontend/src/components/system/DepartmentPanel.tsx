@@ -139,7 +139,7 @@ export default function DepartmentPanel({ can }: DepartmentPanelProps) {
                     onClick={() => setSelectedId(node.id === selectedId ? null : node.id)}
                     // 缩进步长做成响应式：窄屏每级更小，深层部门不会把名称挤到看不见
                     className={cn(
-                      'flex min-w-0 flex-1 touch-target items-center gap-2 py-1.5 text-left',
+                      'flex min-w-0 flex-1 min-h-11 sm:min-h-0 items-center gap-2 py-1.5 text-left',
                       depth === 0
                         ? 'pl-1'
                         : depth === 1

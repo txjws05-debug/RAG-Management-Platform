@@ -26,11 +26,10 @@ export function ThemeToggle({ className }: { className?: string }) {
       title={hydrated ? `切换到${next === 'dark' ? '暗色' : '亮色'}主题` : '主题加载中'}
       aria-label={hydrated ? `切换到${next === 'dark' ? '暗色' : '亮色'}主题` : '主题加载中'}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border border-line bg-canvas px-2 py-1.5',
+        'inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-canvas px-3 py-1.5 sm:min-h-0 sm:px-2',
         'text-xs font-medium text-muted transition-colors',
         'hover:bg-muted-surface hover:text-body',
         'disabled:cursor-not-allowed disabled:opacity-60',
-        'touch-target sm:min-h-0 sm:min-w-0',
         className,
       )}
     >

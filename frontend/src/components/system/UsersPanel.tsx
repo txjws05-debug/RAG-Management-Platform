@@ -487,7 +487,7 @@ function UserForm({
           {roles.map((role) => (
             <label
               key={role.id}
-              className="flex touch-target cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 hover:bg-subtle"
+              className="flex min-h-11 sm:min-h-0 cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 hover:bg-subtle"
             >
               <input
                 type="checkbox"

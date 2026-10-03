@@ -81,7 +81,7 @@ function SidebarContent({
               title={collapsed ? item.label : undefined}
               className={cn(
                 'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
-                'touch-target',
+                'min-h-11 sm:min-h-0',
                 collapsed && 'justify-center px-0',
                 active
                   ? 'bg-brand-soft text-brand-ink'
@@ -239,11 +239,12 @@ function ConsoleShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-line bg-canvas/95 px-3 backdrop-blur sm:gap-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-2">
             {/* 汉堡按钮：仅移动端 */}
+            {/* 汉堡按钮：仅移动端。图标 20px 时靠 p-3 把可点区撑到约 44px */}
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="打开菜单"
-              className="-ml-1 rounded-lg p-1.5 text-muted transition-colors hover:bg-muted-surface hover:text-body lg:hidden"
+              className="-ml-2 rounded-lg p-3 text-muted transition-colors hover:bg-muted-surface hover:text-body sm:p-2 lg:hidden"
             >
               <Icon name="menu" className="h-5 w-5" />
             </button>

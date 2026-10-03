@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * 极简 UI 基础件（全部 Tailwind 手写，不依赖任何 UI 组件库）。
@@ -74,16 +74,35 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
     'bg-canvas text-rose-600 hover:bg-rose-50 border border-rose-200 disabled:opacity-60',
 }
 
+/**
+ * 按钮尺寸：**手机上更高，桌面上保持紧凑**。
+ *
+ * 这里刻意用显式的响应式高度（h-10 sm:h-8），而不是「给一个 min-height 让触屏生效」：
+ * 之前的做法是挂一个 `.touch-target { min-height: 44px }` 在 `@media (hover: none)` 里，
+ * 但它对这类按钮**完全无效** —— 元素本身就有显式 `height`（h-8），
+ * 而 CSS 中 `min-height` 无法覆盖 `height`。实测 375px 下这些按钮仍是 32px 高。
+ *
+ * 显式断点没有这个问题：不依赖浏览器媒体特性，任何环境（含无头浏览器）行为一致，
+ * 也便于直接用几何测量来验证。
+ */
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-2.5 text-xs gap-1',
-  md: 'h-9 px-3.5 text-sm gap-1.5',
+  sm: 'h-11 px-3 text-xs gap-1 sm:h-8 sm:px-2.5',
+  md: 'h-11 px-4 text-sm gap-1.5 sm:h-9 sm:px-3.5',
 }
 
 /**
- * 可点击元素的共用类：触屏下把可点区抬到 44px（见 globals.css 的 @media (hover: none)），
- * 桌面鼠标环境不受影响，因此可以直接内联进每个交互件。
+ * 移动端最小可点高度。
+ *
+ * 为什么是 `min-h-11 sm:min-h-0` 而不是一个 `min-height` 的媒体查询类：
+ *   - `min-height` **无法覆盖显式 `height`**。给带 `h-8` 的按钮挂 min-height 是无效的，
+ *     而那正是之前 `.touch-target` 失效的原因（实测 375px 下仍只有 32px 高）。
+ *     因此带固定高度的按钮改用显式响应式高度（见 BUTTON_SIZES）。
+ *   - 对于本来没有固定高度的元素（图标按钮、chip、树行、勾选框标签），
+ *     `min-height` 能生效，这里抬高到 44px，桌面端用 sm:min-h-0 恢复自然高度。
+ *   - 用显式断点而非 `@media (hover: none)`：不依赖浏览器媒体特性，
+ *     任何环境（含无头浏览器）行为一致，也才能用几何测量验证。
  */
-const TOUCH = 'touch-target'
+const HIT_AREA = 'min-h-11 sm:min-h-0'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -109,7 +128,6 @@ export function Button({
         'inline-flex items-center justify-center rounded-lg font-medium transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
         'disabled:cursor-not-allowed',
-        TOUCH,
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,
@@ -197,7 +215,7 @@ export function Checkbox({
       className={cn(
         'h-4 w-4 cursor-pointer rounded border-line-strong text-brand',
         'focus:ring-2 focus:ring-brand/30',
-        TOUCH,
+        HIT_AREA,
         className,
       )}
     />
@@ -224,7 +242,7 @@ export function Switch({
       className={cn(
         'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
-        TOUCH,
+        HIT_AREA,
         disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
         checked ? 'bg-brand' : 'bg-raised',
       )}
@@ -483,9 +501,9 @@ export function Modal({
             onClick={onClose}
             aria-label="关闭"
             className={cn(
-              '-mr-1 shrink-0 rounded-md px-2 py-1 text-lg leading-none text-muted',
+              '-mr-1 shrink-0 rounded-md p-2.5 text-lg leading-none text-muted sm:p-1.5',
               'hover:bg-subtle hover:text-body',
-              TOUCH,
+              HIT_AREA,
             )}
           >
             ×
@@ -545,9 +563,9 @@ export function Drawer({
             onClick={onClose}
             aria-label="关闭"
             className={cn(
-              '-mr-1 shrink-0 rounded-md px-2 py-1 text-lg leading-none text-muted',
+              '-mr-1 shrink-0 rounded-md p-2.5 text-lg leading-none text-muted sm:p-1.5',
               'hover:bg-subtle hover:text-body',
-              TOUCH,
+              HIT_AREA,
             )}
           >
             ×

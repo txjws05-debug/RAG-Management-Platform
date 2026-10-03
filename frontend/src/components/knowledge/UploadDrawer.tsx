@@ -547,7 +547,7 @@ export default function UploadDrawer({ open, onClose, onUploaded, categories = [
                         {it.status === 'queued' ? (
                           <button
                             type="button"
-                            className="text-xs text-faint hover:text-rose-500 touch-target"
+                            className="inline-block py-1 text-xs text-faint hover:text-rose-500"
                             onClick={() => setItems((prev) => prev.filter((p) => p.key !== it.key))}
                           >
                             移除

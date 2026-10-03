@@ -81,7 +81,7 @@ function TreeCheckbox({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="w-4 shrink-0 text-xs text-faint hover:text-body touch-target"
+            className="w-4 shrink-0 text-xs text-faint hover:text-body min-h-11 sm:min-h-0"
             aria-label={open ? '折叠' : '展开'}
           >
             {open ? '▾' : '▸'}
@@ -92,7 +92,7 @@ function TreeCheckbox({
         <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
           <input
             type="checkbox"
-            className="h-4 w-4 cursor-pointer rounded border-line-strong text-brand focus:ring-2 focus:ring-brand/30 touch-target"
+            className="h-4 w-4 cursor-pointer rounded border-line-strong text-brand focus:ring-2 focus:ring-brand/30 min-h-11 sm:min-h-0"
             checked={checked}
             ref={(el) => {
               if (el) el.indeterminate = indeterminate
@@ -263,7 +263,7 @@ export default function GrantDialog({
 
         {/* 全局公开 */}
         <div className="rounded-lg border border-line bg-subtle/60 px-4 py-3">
-          <label className="flex cursor-pointer items-start gap-3 touch-target">
+          <label className="flex cursor-pointer items-start gap-3 min-h-11 sm:min-h-0">
             <Checkbox
               checked={globalPublic}
               onChange={(e) => setGlobalPublic(e.target.checked)}
@@ -297,7 +297,7 @@ export default function GrantDialog({
                 <span className="text-faint">已选 {deptIds.size}</span>
                 <button
                   type="button"
-                  className="text-brand-ink hover:underline touch-target"
+                  className="inline-block py-1.5 text-brand-ink hover:underline"
                   onClick={() => setDeptIds(new Set())}
                 >
                   清空
@@ -330,7 +330,7 @@ export default function GrantDialog({
                 <span className="text-faint">已选 {roleIds.size}</span>
                 <button
                   type="button"
-                  className="text-brand-ink hover:underline touch-target"
+                  className="inline-block py-1.5 text-brand-ink hover:underline"
                   onClick={() => setRoleIds(new Set())}
                 >
                   清空
@@ -375,7 +375,7 @@ export default function GrantDialog({
               <span className="text-xs text-faint">已选 {userIds.size}</span>
               <button
                 type="button"
-                className="text-xs text-brand-ink hover:underline touch-target"
+                className="inline-block py-1 text-xs text-brand-ink hover:underline"
                 onClick={() => setUserIds(new Set())}
               >
                 清空

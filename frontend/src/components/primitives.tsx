@@ -25,7 +25,7 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
  * 触屏下把可点区抬到 ≥44px（见 globals.css 的 @media (hover: none)）。
  * 桌面鼠标环境不生效，因此可以安全地内联进每个交互件。
  */
-const TOUCH = 'touch-target';
+const HIT_AREA = 'min-h-11 sm:min-h-0';
 
 /* ------------------------------------------------------------------ */
 /* 按钮 / 加载态                                                       */
@@ -46,8 +46,8 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-2.5 text-xs gap-1',
-  md: 'h-9 px-3.5 text-sm gap-1.5',
+  sm: 'h-11 px-3 text-xs gap-1 sm:h-8 sm:px-2.5',
+  md: 'h-11 px-4 text-sm gap-1.5 sm:h-9 sm:px-3.5',
   lg: 'h-11 px-5 text-sm gap-2',
 };
 
@@ -78,7 +78,7 @@ export function Button({
         'inline-flex shrink-0 items-center justify-center rounded-lg font-medium transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink/40',
         'disabled:cursor-not-allowed',
-        TOUCH,
+        HIT_AREA,
         BUTTON_VARIANTS[variant],
         BUTTON_SIZES[size],
         className,
@@ -387,8 +387,8 @@ export function Segmented<T extends string | number>({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-              TOUCH,
+              'rounded-md px-3 py-2.5 text-xs font-medium transition-colors sm:py-1',
+              HIT_AREA,
               active ? 'bg-canvas text-brand-ink shadow-sm' : 'text-muted hover:text-body',
             )}
           >
@@ -556,7 +556,7 @@ export function Modal({
             aria-label="关闭"
             className={cn(
               '-mr-1 shrink-0 rounded-md p-1 text-muted hover:bg-subtle hover:text-body',
-              TOUCH,
+              HIT_AREA,
             )}
           >
             <Icon name="close" className="h-4 w-4" />

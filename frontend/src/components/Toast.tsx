@@ -116,7 +116,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => remove(item.id)}
               aria-label="关闭提示"
-              className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100 touch-target"
+              className="shrink-0 rounded p-0.5 opacity-60 hover:opacity-100 min-h-11 sm:min-h-0"
             >
               <Icon name="close" className="h-3 w-3" />
             </button>

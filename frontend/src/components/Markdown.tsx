@@ -46,7 +46,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
           type="button"
           onClick={copy}
           className={cn(
-            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors touch-target',
+            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] transition-colors min-h-11 sm:min-h-0',
             copied
               ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
               : 'border-line bg-canvas text-muted hover:text-brand-ink',

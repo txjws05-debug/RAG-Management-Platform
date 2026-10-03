@@ -133,7 +133,7 @@ export default function LoginPage() {
               variant="primary"
               size="lg"
               loading={submitting}
-              className="h-11 w-full touch-target"
+              className="h-11 w-full min-h-11 sm:min-h-0"
             >
               {submitting ? '登录中…' : '登录'}
             </Button>

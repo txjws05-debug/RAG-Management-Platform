@@ -49,7 +49,7 @@ export default function SedimentationPage() {
             type="button"
             onClick={() => setTab(item.key)}
             className={cn(
-              'flex-1 touch-target rounded-lg px-3 py-2 text-left transition-colors',
+              'flex-1 min-h-11 sm:min-h-0 rounded-lg px-3 py-2 text-left transition-colors',
               tab === item.key ? 'bg-brand-soft text-brand-ink' : 'text-body hover:bg-subtle',
             )}
           >
