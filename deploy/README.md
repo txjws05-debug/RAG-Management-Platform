@@ -175,9 +175,22 @@ kb-web      Up
 
 ```bash
 docker exec cs-postgres psql -U cs -d kb -c "\dx"          # 应看到 vector 与 pg_trgm
-docker exec cs-postgres psql -U cs -d kb -c "\dt"          # 迁移后应有 10 张表
+docker exec cs-postgres psql -U cs -d kb -c "\dt"          # 迁移后应有 15 张表（含 alembic_version）
 docker exec cs-postgres psql -U cs -d kb -c "select version_num from alembic_version"
 ```
+
+### 完整链路自检（可选，推荐首次部署后跑一次）
+
+仓库里带了一个脚本，它用纯 Docker 复现整条部署链路：起一个临时的 Postgres 冒充 `cs-postgres`、探测网络、建角色/库/扩展、拉起整套服务，最后断言迁移版本与种子数据。
+
+```bash
+cd /opt/rag
+bash scripts/deploy-dry-run.sh
+```
+
+它会自行清理（临时容器、网络、卷、`.env.prod` 都会删掉），**不影响正在运行的服务**——它用的是独立容器名 `cs-postgres-test` 与独立网络 `rag-deploy-test`，只在**结束清理时**会删掉名为 `kb-api` / `kb-web` / `kb-nginx` 的容器，因此**不要在正式服务运行时执行它**。
+
+脚本结束时若打印「本地部署演练全部通过」，说明这条部署路径在你的机器上确实成立。
 
 ---
 
