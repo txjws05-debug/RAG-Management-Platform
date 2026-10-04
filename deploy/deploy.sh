@@ -187,9 +187,11 @@ if [[ "$(docker inspect kb-api --format '{{.State.Health.Status}}' 2>/dev/null |
 fi
 log "kb-api 健康"
 
-# ---------- 7. 可选：接入客服项目已有的 Caddy，走域名 + 自动 HTTPS ----------
-# 只在 .env.prod 设了 RAG_DOMAIN 时启用。设了就必须成功，否则静默半配置状态
-# （容器都起来了但域名访问不了）比直接失败更难排查，所以失败即退出。
+# ---------- 7. 可选：接入客服项目已有的 Caddy，走自定义域名 ----------
+# 只在 .env.prod 设了 RAG_DOMAIN 时启用。支持两种写法：
+#   RAG_DOMAIN=http://txjws05.dpdns.org   → 纯 HTTP（走 80，不需要 443）
+#   RAG_DOMAIN=txjws05.dpdns.org          → 自动签证书并强制 HTTPS（需放行 443）
+# 设了就必须成功：静默的半配置状态（容器起来了但域名访问不了）比直接失败更难排查。
 CADDY_CONTAINER="${CADDY_CONTAINER:-cs-caddy}"
 CADDYFILE=""
 for candidate in \
@@ -202,12 +204,31 @@ do
 done
 
 if [[ -n "${RAG_DOMAIN:-}" ]]; then
-  log "接入 Caddy：${RAG_DOMAIN} → kb-nginx:80"
+  # 解析 RAG_DOMAIN：既接受裸域名，也接受带 scheme 的写法。
+  #
+  # Caddy 的站点地址带不带 scheme 决定是否启用 TLS：
+  #   txjws05.dpdns.org          → 自动申请证书并强制 HTTPS
+  #   http://txjws05.dpdns.org   → 显式 HTTP，不签证书、不做跳转
+  # 因此"只用 HTTP"必须把 scheme 显式写成 http://，
+  # 否则 Caddy 会去签证书，再因为 443 未放行导致域名访问不通。
+  if [[ "$RAG_DOMAIN" == http://* ]]; then
+    RAG_SCHEME="http";  RAG_HOST="${RAG_DOMAIN#http://}"
+  elif [[ "$RAG_DOMAIN" == https://* ]]; then
+    RAG_SCHEME="https"; RAG_HOST="${RAG_DOMAIN#https://}"
+  else
+    RAG_SCHEME="https"; RAG_HOST="$RAG_DOMAIN"   # 裸域名默认走 HTTPS
+  fi
+  RAG_HOST="${RAG_HOST%%/*}"
+  CADDY_SITE="$RAG_HOST"
+  [[ "$RAG_SCHEME" == "http" ]] && CADDY_SITE="http://${RAG_HOST}"
+  RAG_BASE="${RAG_SCHEME}://${RAG_HOST}"
+
+  log "接入 Caddy：${CADDY_SITE} → kb-nginx:80"
 
   if [[ -z "$CADDYFILE" ]]; then
     # 不自动修改未知路径的文件：先让人确认，而不是猜一个可能错的
     warn "设置了 RAG_DOMAIN，但找不到 Caddyfile。请手动在 Caddyfile 中加入："
-    warn "    ${RAG_DOMAIN} {"
+    warn "    ${CADDY_SITE} {"
     warn "        encode zstd gzip"
     warn "        reverse_proxy kb-nginx:80"
     warn "    }"
@@ -216,13 +237,13 @@ if [[ -n "${RAG_DOMAIN:-}" ]]; then
   fi
   log "Caddyfile：${CADDYFILE}"
 
-  if grep -qF "$RAG_DOMAIN" "$CADDYFILE" 2>/dev/null; then
-    log "Caddyfile 中已存在 ${RAG_DOMAIN}，跳过写入"
+  if grep -qF "$CADDY_SITE" "$CADDYFILE" 2>/dev/null; then
+    log "Caddyfile 中已存在 ${CADDY_SITE}，跳过写入"
   else
     cp "$CADDYFILE" "${CADDYFILE}.bak.$(date +%Y%m%d%H%M%S)"
     {
       printf '\n# 知识库管理平台（由 RAG 的 deploy/deploy.sh 自动追加）\n'
-      printf '%s {\n' "$RAG_DOMAIN"
+      printf '%s {\n' "$CADDY_SITE"
       printf '        encode zstd gzip\n'
       printf '        reverse_proxy kb-nginx:80\n'
       printf '}\n'
@@ -238,18 +259,27 @@ if [[ -n "${RAG_DOMAIN:-}" ]]; then
     exit 1
   fi
 
-  # 首次签发证书需要几秒；这里只做提示，未通过不判失败 ——
-  # 证书签发依赖 DNS 已生效 + 80/443 对公网放行，属外部条件，脚本无法自证。
-  log "等待证书签发（首次通常 5～20 秒）…"
-  sleep 8
+  # 只做提示，未通过不判失败：域名能否访问取决于 DNS 是否生效、端口是否对公网放行，
+  # 都是脚本无法自证或自行修复的外部条件。
+  if [[ "$RAG_SCHEME" == "https" ]]; then
+    log "等待证书签发（首次通常 5～20 秒）…"
+    sleep 8
+  else
+    sleep 2
+  fi
+
   if command -v curl >/dev/null 2>&1; then
-    if curl -fsS --max-time 20 "https://${RAG_DOMAIN}/api/health" >/dev/null 2>&1; then
-      log "HTTPS 链路验证通过：https://${RAG_DOMAIN}"
+    if curl -fsS --max-time 20 "${RAG_BASE}/api/health" >/dev/null 2>&1; then
+      log "域名链路验证通过：${RAG_BASE}"
     else
-      warn "https://${RAG_DOMAIN} 暂时访问不通。逐项检查："
-      warn "  1) DNS：${RAG_DOMAIN} 是否已解析到本机公网 IP（dig +short ${RAG_DOMAIN}）"
-      warn "  2) 云防火墙/安全组是否放行 80 与 443（Let's Encrypt 要从公网回连做验证）"
-      warn "  3) 证书签发日志： docker logs --tail 50 ${CADDY_CONTAINER}"
+      warn "${RAG_BASE} 暂时访问不通。逐项检查："
+      warn "  1) DNS：${RAG_HOST} 是否已解析到本机公网 IP（dig +short ${RAG_HOST}）"
+      if [[ "$RAG_SCHEME" == "https" ]]; then
+        warn "  2) 云防火墙/安全组是否放行 80 与 443（Let's Encrypt 要从公网回连验证）"
+      else
+        warn "  2) 云防火墙/安全组是否放行 80（HTTP 走 80，不需要 443）"
+      fi
+      warn "  3) Caddy 日志： docker logs --tail 50 ${CADDY_CONTAINER}"
       warn "端口 ${HTTP_PORT} 的直连方式仍然可用，域名稍后会自动恢复。"
     fi
   fi

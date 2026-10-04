@@ -23,9 +23,12 @@
 services:
   api:
     image: ${REGISTRY:-ghcr.io}/txjws05-debug/rag-management-platform-api:${IMAGE_TAG:-latest}
-    # 默认 always（服务器上每次都拉最新镜像）。
-    # 可用 KB_PULL_POLICY 覆盖为 missing / never，便于本地演练或离线环境。
-    pull_policy: ${KB_PULL_POLICY:-always}
+    # pull_policy 用 missing，不要用 always。
+    #   missing —— 本地没有该 tag 才拉取。Docker 按层比对，未变化的层直接复用缓存，
+    #              只有真正改动的层走网络（几 MB ~ 几十 MB），部署从 16 分钟降到一两分钟。
+    #   always  —— 每次部署都把所有层重新走一遍网络传输，首次那 800MB 会反复耗时。
+    # 不影响"换 tag 即换镜像"：IMAGE_TAG 用 commit sha，新提交的 tag 本地不存在，仍会拉取。
+    pull_policy: ${KB_PULL_POLICY:-missing}
     container_name: kb-api
     restart: unless-stopped
     env_file:
@@ -54,9 +57,8 @@ services:
 
   web:
     image: ${REGISTRY:-ghcr.io}/txjws05-debug/rag-management-platform-web:${IMAGE_TAG:-latest}
-    # 默认 always（服务器上每次都拉最新镜像）。
-    # 可用 KB_PULL_POLICY 覆盖为 missing / never，便于本地演练或离线环境。
-    pull_policy: ${KB_PULL_POLICY:-always}
+    # 与 api 同理：missing 才会复用已有的镜像层，避免每次重复拉 300MB+
+    pull_policy: ${KB_PULL_POLICY:-missing}
     container_name: kb-web
     restart: unless-stopped
     environment:
