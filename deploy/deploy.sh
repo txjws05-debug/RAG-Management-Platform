@@ -134,12 +134,31 @@ log "部署镜像 tag：${TAG}"
 # 两个 --env-file：配置来自 .env.prod，外部网络名来自上一步写入的 .env.network。
 dc() { docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --env-file "$NET_FILE" "$@"; }
 
-log "拉取镜像…"
-if ! dc pull --quiet 2>/dev/null && ! dc pull; then
-  warn "拉取失败。常见原因："
-  warn "  1) GHCR 上的包是私有的 —— 在 GitHub Packages 页面把两个包设为 public，"
+# 拉镜像要重试。
+# 为什么必须重试：ghcr.io 走境外 CDN，国内服务器拉大 layer 常见「下到一半 unexpected EOF」。
+# Docker 会保留已完成的分层，所以下一次拉取能接着下 —— 实测连续重试几次即可成功。
+# 只在脚本里 pull 一次的话，一次网络抖动就会让整个 CI 变红，而这种失败重跑就能过。
+PULL_ATTEMPTS="${PULL_ATTEMPTS:-5}"
+log "拉取镜像（最多尝试 ${PULL_ATTEMPTS} 次，网络中断会自动重试并续传）…"
+pull_ok=0
+for attempt in $(seq 1 "$PULL_ATTEMPTS"); do
+  if dc pull --quiet 2>/dev/null || dc pull; then
+    pull_ok=1
+    [[ "$attempt" -gt 1 ]] && log "第 ${attempt} 次尝试成功"
+    break
+  fi
+  if [[ "$attempt" -lt "$PULL_ATTEMPTS" ]]; then
+    warn "第 ${attempt}/${PULL_ATTEMPTS} 次拉取失败，10 秒后续传（已下载的分层会复用）…"
+    sleep 10
+  fi
+done
+
+if [[ "$pull_ok" -ne 1 ]]; then
+  warn "拉取失败（已重试 ${PULL_ATTEMPTS} 次）。常见原因："
+  warn "  1) 网络到 ghcr.io 不稳 —— 可加大重试次数： PULL_ATTEMPTS=15 bash deploy/deploy.sh"
+  warn "  2) GHCR 上的包是私有的 —— 在 GitHub Packages 页面把两个包设为 public，"
   warn "     或执行 docker login ghcr.io -u <用户名> -p <只含 read:packages 的 PAT>"
-  warn "  2) CI 尚未成功构建过镜像 —— 检查 Actions 里 build 的状态"
+  warn "  3) CI 尚未成功构建过镜像 —— 检查 Actions 里 build 的状态"
   exit 1
 fi
 

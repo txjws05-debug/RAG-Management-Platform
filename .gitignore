@@ -32,6 +32,9 @@ logs/
 RAG.txt
 docs/
 
+# ---- 个人简历与生成脚本：不进代码仓库 ----
+resume/
+
 # ---- 截图脚本产生的浏览器临时 profile ----
 .chrome-profile/
 docs/screenshots/.chrome-profile/
