@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+# 生产配置（含数据库密码、SECRET_KEY、LLM Key）只留服务器本地，不进仓库
+.env.prod
 
 # ---- Python ----
 __pycache__/

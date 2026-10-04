@@ -1,9 +1,21 @@
-﻿# 统一换行符为 LF，避免 Windows 上 CRLF 造成的 diff 噪音与 Docker 内脚本执行问题
+# 统一换行符为 LF。
+#
+# 这不仅是 diff 噪音问题：仓库里带 .sh 的脚本要在 Linux 容器 / 服务器上执行，
+# 一旦被检出为 CRLF，shebang 行会变成 `#!/usr/bin/env bash\r`，
+# 服务器上直接报 `bad interpreter: No such file or directory`，
+# 而且报错信息完全不提示是换行符的问题，很费时间。
 * text=auto eol=lf
+
+# 明确列出必须在 Linux 上执行的脚本，即使将来有人改掉上面的全局规则也不会被转成 CRLF
+*.sh text eol=lf
+*.bash text eol=lf
 
 # 二进制文件不做换行转换
 *.png binary
 *.jpg binary
+*.jpeg binary
+*.gif binary
 *.ico binary
 *.woff binary
 *.woff2 binary
+*.pdf binary

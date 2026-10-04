@@ -1,0 +1,96 @@
+# ============================================================
+# 生产编排：只使用 GHCR 上 CI 构建好的镜像，不在服务器上构建。
+#
+# 与 docker-compose.yml 的分工：
+#   docker-compose.yml        -> 本地开发（带 build:，可在本机构建）
+#   docker-compose.prod.yml   -> 服务器生产（只有 image:，纯拉取）
+#
+# 为什么服务器上不构建：目标机内存有限（约 2G），本地构建 Next.js 极易 OOM，
+# 因此生产一律走镜像拉取。CI 负责 build 并 push 到 GHCR。
+#
+# 与既有项目共存的三个关键点：
+#   1. 不再起自己的 Postgres —— 复用客服项目的 cs-postgres，在其上建独立库 kb。
+#      这样只多一个数据库而非一个数据库进程，2G 机器上省内存很实在。
+#   2. 因此本编排**没有 db 服务**，但必须接入 cs-postgres 所在的 Docker 网络；
+#      该网络名由外部变量 KB_EXTERNAL_NETWORK 注入（部署脚本会动态探测，见 deploy/deploy.sh）。
+#   3. 对外只暴露 nginx 的 ${HTTP_PORT:-8080}，不碰客服项目已占用的 80/443。
+#
+# 用法（服务器上）：
+#   KB_EXTERNAL_NETWORK=<cs 的网络名> docker compose \
+#     -f docker-compose.prod.yml --env-file .env.prod up -d
+# ============================================================
+
+services:
+  api:
+    image: ${REGISTRY:-ghcr.io}/txjws05-debug/rag-management-platform-api:${IMAGE_TAG:-latest}
+    # 默认 always（服务器上每次都拉最新镜像）。
+    # 可用 KB_PULL_POLICY 覆盖为 missing / never，便于本地演练或离线环境。
+    pull_policy: ${KB_PULL_POLICY:-always}
+    container_name: kb-api
+    restart: unless-stopped
+    env_file:
+      - ./.env.prod
+    environment:
+      # 指向客服项目已有的 Postgres，库名独立为 kb
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kb}:${POSTGRES_PASSWORD}@cs-postgres:5432/${POSTGRES_DB:-kb}
+      DATA_DIR: /data
+      TZ: Asia/Shanghai
+    volumes:
+      # 上传的原始文档需要持久化：容器重建不应该丢文件
+      - kb_upload_data:/data
+    networks: [kb, csnet]
+    # 数据库由另一个 compose 项目提供，无法用 depends_on 表达依赖关系，
+    # 因此靠健康检查 + restart 策略兜住启动顺序。
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request,sys;
+          sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3).status==200 else 1)"
+      interval: 20s
+      timeout: 8s
+      retries: 10
+      start_period: 60s
+
+  web:
+    image: ${REGISTRY:-ghcr.io}/txjws05-debug/rag-management-platform-web:${IMAGE_TAG:-latest}
+    # 默认 always（服务器上每次都拉最新镜像）。
+    # 可用 KB_PULL_POLICY 覆盖为 missing / never，便于本地演练或离线环境。
+    pull_policy: ${KB_PULL_POLICY:-always}
+    container_name: kb-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      TZ: Asia/Shanghai
+    networks: [kb]
+    depends_on:
+      - api
+
+  nginx:
+    # 用官方镜像 + 只读挂载仓库里的配置，省掉一次 CI 构建与一个 GHCR 包
+    image: nginx:alpine
+    container_name: kb-nginx
+    restart: unless-stopped
+    ports:
+      # 只绑这一个对外端口；客服项目用的是 80/443，互不影响
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [kb]
+    depends_on:
+      - api
+      - web
+
+volumes:
+  kb_upload_data:
+
+networks:
+  kb:
+    driver: bridge
+  # cs-postgres 所在的既有网络。设为 external 表示"这个网络由别的项目创建，本编排只接入"，
+  # 这样 compose 不会尝试创建或删除它，客服项目重建网络时也不会被本编排牵连。
+  csnet:
+    external: true
+    name: ${KB_EXTERNAL_NETWORK:?必须指定客服项目 cs-postgres 所在的 Docker 网络名}

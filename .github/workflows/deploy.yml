@@ -1,0 +1,119 @@
+name: Build and deploy
+
+# ============================================================
+# 流程：构建两个镜像 → 推送 GHCR → SSH 到服务器拉取重启
+#
+# 为什么镜像在 CI 构建而不是服务器上：
+#   目标机内存约 2G，本地构建 Next.js 极易 OOM。
+#   服务器只做 docker pull，不做 build（见 docker-compose.prod.yml）。
+#
+# 需要的 Repository secrets（缺失时只构建、不部署，不会失败）：
+#   SERVER_HOST       服务器 IP 或域名
+#   SERVER_USER       SSH 用户名（如 root）
+#   SERVER_SSH_KEY    SSH 私钥（含 BEGIN/END 全量内容）
+#   SERVER_PORT       SSH 端口，可省略（默认 22）
+#   SERVER_APP_DIR    服务器上的项目目录，如 /opt/rag
+#
+# 注意：数据库密码、SECRET_KEY、LLM Key **不在** CI 里配置。
+#       它们保存在服务器上的 .env.prod（本地文件），CI 只负责镜像。
+# ============================================================
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  # 显式写小写镜像名，不用 ${{ github.repository }}：
+  # 仓库名是 RAG-Management-Platform（含大写），而 GHCR 要求镜像路径全小写，
+  # 直接用会把大写的仓库名拼进 tag，导致 push 报 invalid reference。
+  IMAGE_PREFIX: txjws05-debug/rag-management-platform
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: ./backend
+            file: ./backend/Dockerfile
+            # 境外构建用官方源；留空即走 Dockerfile 里的默认分支（不传 -i）
+            build_args: |
+              PY_REGISTRY=docker.io
+              PIP_INDEX_URL=
+          - name: web
+            context: ./frontend
+            file: ./frontend/Dockerfile
+            build_args: |
+              NODE_REGISTRY=docker.io
+              NPM_REGISTRY=https://registry.npmjs.org
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          build-args: ${{ matrix.build_args }}
+          # latest 便于手动部署；sha 便于精确回滚
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # 没有配置服务器信息时跳过而不是报错：这样 fork 或本地验证也能跑通构建
+    if: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Check deploy secrets
+        id: check
+        run: |
+          if [ -z "${{ secrets.SERVER_HOST }}" ] || [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=已跳过部署::未配置 SERVER_HOST / SERVER_USER / SERVER_SSH_KEY，本次只构建并推送镜像。"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        if: steps.check.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          APP_DIR: ${{ secrets.SERVER_APP_DIR }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          # 镜像较大，拉取 + 健康检查可能超过默认超时
+          command_timeout: 15m
+          envs: IMAGE_TAG,APP_DIR
+          script: |
+            set -e
+            APP_DIR="${APP_DIR:-/opt/rag}"
+            cd "$APP_DIR"
+            git pull --ff-only || echo "跳过 git pull（镜像部署不依赖源码更新）"
+            IMAGE_TAG="$IMAGE_TAG" bash deploy/deploy.sh
