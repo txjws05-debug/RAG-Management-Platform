@@ -74,11 +74,14 @@ services:
     container_name: kb-nginx
     restart: unless-stopped
     ports:
-      # 只绑这一个对外端口；客服项目用的是 80/443，互不影响
+      # 对外端口：既是 IP 直连的入口，也是 HTTPS 配置出问题时的备用通道。
+      # 客服项目的 Caddy 用 80/443，互不影响。
       - "${HTTP_PORT:-8080}:80"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    networks: [kb]
+    # 必须同时接入 csnet：客服项目的 Caddy 要把 rag 子域名的请求转发到 kb-nginx:80，
+    # 而 Caddy 只在 cs_backend 网络里，看不到只挂在 kb 网络上的容器。
+    networks: [kb, csnet]
     depends_on:
       - api
       - web
