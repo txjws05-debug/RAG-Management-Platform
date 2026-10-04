@@ -54,12 +54,27 @@ log "已发现 ${CS_PG_CONTAINER}"
 # 写死会在目录改名后静默失效（表现为 api 连不上库）。
 # 用数组传参而不是行内引号 + 管道：Go 模板里的 \n 在双引号内会先被 shell 解释，
 # 拆成数组后转义层级清晰，也不会因为续行与管道混用而报语法错误。
+# 下面那行的单引号是刻意的：这是 Go 模板，不能让 shell 展开 $k/$v。
+# shellcheck disable=SC2016
 INSPECT_ARGS=(docker inspect "$CS_PG_CONTAINER" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}')
 EXTERNAL_NET="$("${INSPECT_ARGS[@]}" | sed '/^$/d' | head -1)"
 
 [[ -n "$EXTERNAL_NET" ]] || die "无法探测 ${CS_PG_CONTAINER} 的网络，请手动设置 KB_EXTERNAL_NETWORK"
 export KB_EXTERNAL_NETWORK="$EXTERNAL_NET"
 log "${CS_PG_CONTAINER} 所在网络：${EXTERNAL_NET}"
+
+# 持久化到 .env.network。
+# 必要性：compose 的变量插值只读「项目目录 .env」或 --env-file，不读服务里的 env_file，
+# 因此如果只在本脚本内 export，用户之后手动执行 docker compose ps 就会直接报
+# "required variable KB_EXTERNAL_NETWORK is missing" —— 这条报错完全不像"少了一个环境变量"，
+# 第一次遇到很费解。写进文件后配合 ./dc 包装脚本即可无感使用。
+NET_FILE=".env.network"
+if [[ ! -f "$NET_FILE" ]] || [[ "$(sed -n 's/^KB_EXTERNAL_NETWORK=//p' "$NET_FILE" | head -1)" != "$EXTERNAL_NET" ]]; then
+  printf 'KB_EXTERNAL_NETWORK=%s\n' "$EXTERNAL_NET" > "$NET_FILE"
+  log "已写入 ${NET_FILE}（供 ./dc 与手动 compose 命令使用）"
+else
+  log "${NET_FILE} 已是最新"
+fi
 
 # ---------- 3. 在既有 Postgres 上准备独立角色、库与扩展（幂等） ----------
 # 只在第一次部署时真的做事；后续运行只做快速查询。
@@ -116,7 +131,8 @@ fi
 log "部署镜像 tag：${TAG}"
 
 # ---------- 5. 拉取并启动 ----------
-dc() { docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"; }
+# 两个 --env-file：配置来自 .env.prod，外部网络名来自上一步写入的 .env.network。
+dc() { docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" --env-file "$NET_FILE" "$@"; }
 
 log "拉取镜像…"
 if ! dc pull --quiet 2>/dev/null && ! dc pull; then
@@ -131,8 +147,10 @@ log "启动服务…"
 dc up -d --remove-orphans
 
 # ---------- 6. 等待健康并验证 ----------
+# 最多等 150 秒（30 轮 × 5 秒）。计数变量用 `_` 而不是具名变量：
+# 它不参与任何逻辑，具名会被静态检查报"变量未使用"。
 log "等待 api 健康检查通过（最多 150 秒）…"
-for i in $(seq 1 30); do
+for _ in $(seq 1 30); do
   STATUS="$(docker inspect kb-api --format '{{.State.Health.Status}}' 2>/dev/null || echo unknown)"
   if [[ "$STATUS" == "healthy" ]]; then break; fi
   if [[ "$STATUS" == "unhealthy" ]]; then

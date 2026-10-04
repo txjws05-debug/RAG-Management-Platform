@@ -73,6 +73,8 @@ docker exec "$TEST_PG" pg_isready -U "$CS_SUPERUSER" >/dev/null || die "测试�
 ok "测试数据库就绪"
 
 # ---------- 2. 网络探测（与 deploy.sh 相同的表达式）----------
+# 下面那行的单引号是刻意的：这是 Go 模板，不能让 shell 展开 $k/$v。
+# shellcheck disable=SC2016
 INSPECT_ARGS=(docker inspect "$CS_PG_CONTAINER" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}')
 EXTERNAL_NET="$("${INSPECT_ARGS[@]}" | sed '/^$/d' | head -1)"
 [[ "$EXTERNAL_NET" == "$TEST_NET" ]] || die "网络探测失败：得到 [$EXTERNAL_NET]，期望 [$TEST_NET]"

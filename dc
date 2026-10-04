@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# 生产环境 compose 包装脚本。
+#
+# 存在的理由：本编排要接入客服项目已有的 Docker 网络，网络名由 deploy.sh 探测后
+# 写入 .env.network。而 compose 的变量插值**不会**读服务里的 env_file，
+# 只认「项目目录 .env」或 --env-file，所以手敲 compose 必须带两个 --env-file。
+# 这个脚本把它收敛成一条命令，避免每次都要记住那串参数。
+#
+# 用法（在项目目录下）：
+#   ./dc ps
+#   ./dc logs -f kb-api
+#   ./dc up -d
+#   ./dc down
+#
+# 注意：必须写成 `./dc`（带路径）。直接敲 `dc` 会命中 Unix 自带的同名计算器程序，
+# 报错会完全不着边际。
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+ENV_FILE=".env.prod"
+NET_FILE=".env.network"
+COMPOSE_FILE="docker-compose.prod.yml"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "缺少 $ENV_FILE。请先执行： cp .env.prod.example $ENV_FILE 并填写密码。" >&2
+  exit 1
+fi
+
+# .env.network 缺失时提前失败并说明原因。
+# 否则 compose 会抛 "required variable KB_EXTERNAL_NETWORK is missing a value"，
+# 这条报错看不出是"还没跑过部署脚本"。
+if [[ ! -f "$NET_FILE" ]]; then
+  cat >&2 <<'MSG'
+缺少 .env.network —— 外部 Docker 网络名还没探测出来。
+
+请先运行一次部署脚本，它会自动探测并写入：
+  bash deploy/deploy.sh
+
+若你已知网络名，也可手动写入：
+  echo KB_EXTERNAL_NETWORK=<网络名> > .env.network
+  （查网络名：
+     docker inspect cs-postgres --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{println}}{{end}}'
+   ）
+MSG
+  exit 1
+fi
+
+exec docker compose \
+  -f "$COMPOSE_FILE" \
+  --env-file "$ENV_FILE" \
+  --env-file "$NET_FILE" \
+  "$@"

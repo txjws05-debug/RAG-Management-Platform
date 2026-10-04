@@ -91,6 +91,12 @@ networks:
     driver: bridge
   # cs-postgres 所在的既有网络。设为 external 表示"这个网络由别的项目创建，本编排只接入"，
   # 这样 compose 不会尝试创建或删除它，客服项目重建网络时也不会被本编排牵连。
+  #
+  # KB_EXTERNAL_NETWORK 由 deploy/deploy.sh 在探测后写入 .env.network 持久化。
+  # 注意 compose 的变量插值只读「项目目录的 .env」或 --env-file 指定的文件，
+  # 不会读服务里的 env_file，所以手动执行 compose 时必须带上 .env.network：
+  #   docker compose -f docker-compose.prod.yml --env-file .env.prod --env-file .env.network ps
+  # 嫌长就用包装脚本： ./dc ps
   csnet:
     external: true
-    name: ${KB_EXTERNAL_NETWORK:?必须指定客服项目 cs-postgres 所在的 Docker 网络名}
+    name: ${KB_EXTERNAL_NETWORK:?未设置。请先运行 bash deploy/deploy.sh（它会写入 .env.network），或手动指定：KB_EXTERNAL_NETWORK=<网络名> docker compose ...}

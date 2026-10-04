@@ -41,3 +41,5 @@ docs/screenshots/.chrome-profile/
 .idea/
 .DS_Store
 Thumbs.db
+# 探测到的外部 Docker 网络名（服务器本地生成，不进仓库）
+.env.network
