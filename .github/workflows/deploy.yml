@@ -108,8 +108,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          # 镜像较大，拉取 + 健康检查可能超过默认超时
-          command_timeout: 15m
+          # 首次从 GHCR 全量拉镜像约 800MB（api 470MB + web 326MB），国内带宽下
+          # 可能需要十几分钟甚至更久；而本 action 的 command_timeout 默认只有 10m，
+          # 会中途把命令掐断，让本来正常的部署报「Run Command Timeout」失败。
+          # 客服项目也踩过同一个坑，那里用的是 30m；这里取 45m，给首次冷启动留足余量
+          # （后续部署只拉变化的层，通常几分钟内完成）。
+          command_timeout: 45m
           envs: IMAGE_TAG,APP_DIR
           script: |
             set -e
