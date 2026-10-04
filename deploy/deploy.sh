@@ -36,6 +36,14 @@ PG_PASSWORD="$(env_get POSTGRES_PASSWORD)"
 # 建角色/建库/建扩展需要超级用户，用客服项目实例的超级用户账号
 CS_SUPERUSER="$(env_get CS_SUPERUSER)"; CS_SUPERUSER="${CS_SUPERUSER:-cs}"
 
+# 域名：**环境变量优先**，其次读 .env.prod。
+#
+# 优先级这么定的原因：改 .env.prod 需要有人 SSH 上服务器手动编辑，容易漏、也容易
+# 因为"键不存在"而静默失败。允许环境变量覆盖后，域名可以由 CI 直接下发
+# （GitHub Secret → ssh-action 的 envs → 这里的 $RAG_DOMAIN），服务器上零手工操作。
+# 若要在服务器上固定，仍可写进 .env.prod，CI 不传时就用它。
+RAG_DOMAIN="${RAG_DOMAIN:-$(env_get RAG_DOMAIN)}"
+
 [[ -n "$PG_PASSWORD" ]] || die "在 $ENV_FILE 中找不到 POSTGRES_PASSWORD"
 
 # 复用的数据库容器名。默认 cs-postgres（客服项目的实例）；

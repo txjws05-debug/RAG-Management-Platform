@@ -103,6 +103,12 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
           APP_DIR: ${{ secrets.SERVER_APP_DIR }}
+          # 域名从 Secret 下发，服务器上无需手工编辑 .env.prod。
+          # 写法决定协议，别漏掉 http:// 前缀：
+          #   http://txjws.dpdns.org  纯 HTTP（只走 80，不需要 443）
+          #   txjws.dpdns.org         自动签证书并强制 HTTPS（需放行 443）
+          # 未配置该 Secret 时传进来是空串，脚本会退回读服务器上的 .env.prod。
+          RAG_DOMAIN: ${{ secrets.RAG_DOMAIN }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -114,10 +120,14 @@ jobs:
           # 客服项目也踩过同一个坑，那里用的是 30m；这里取 45m，给首次冷启动留足余量
           # （后续部署只拉变化的层，通常几分钟内完成）。
           command_timeout: 45m
-          envs: IMAGE_TAG,APP_DIR
+          envs: IMAGE_TAG,APP_DIR,RAG_DOMAIN
           script: |
             set -e
             APP_DIR="${APP_DIR:-/opt/rag}"
             cd "$APP_DIR"
-            git pull --ff-only || echo "跳过 git pull（镜像部署不依赖源码更新）"
-            IMAGE_TAG="$IMAGE_TAG" bash deploy/deploy.sh
+            # git pull 失败必须看得见：之前用 || echo 兜底，结果服务器长期停在旧代码，
+            # CI 却一直显示成功，排查时完全没人注意到。
+            if ! git pull --ff-only; then
+              echo "::warning::git pull 失败，将使用服务器上的现有代码继续部署"
+            fi
+            RAG_DOMAIN="$RAG_DOMAIN" IMAGE_TAG="$IMAGE_TAG" bash deploy/deploy.sh
